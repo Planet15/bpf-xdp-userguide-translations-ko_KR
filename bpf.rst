@@ -49,15 +49,34 @@ LLVM은 BPF 백엔드를 제공하므로 clang과 같은 도구를 사용하여 
 
 마지막으로, 그렇지만 앞에서 설명한 것과 마찬가지로 중요한 것은 BPF를 사용하는 
 커널 서브 시스템은 BPF의 기반의 일부라는 것입니다. 이 문서에서 다루는 두 가지 
-주요 하위 시스템은 BPF 프로그램을 연결할 수 있는 tc 및 XDP 입니다. XDP BPF 프로
-그램은 초기 네트워킹 드라이버 단계에 연결되어 패킷 수신시 BPF 프로그램 실행을 
-유발하게 합니다. 정의에 따르면 패킷이 소프트웨어보다 더 빠른 시점에서 처리 될 
-수 없으므로 최상의 패킷 처리 성능을 얻을 수 있습니다. 그러나 이러한 처리는 
-네트워킹 스택의 초기에 발생하기 때문에 스택은 패킷에서 아직 메타 데이터를 추출
-하지 못했습니다. 반면에 tc BPF 프로그램은 커널 스택에서 나중에 실행 되므로 더 
-많은 메타 데이터와 코어 커널 기능에 접근 할 수 있습니다. tc 및 XDP 프로그램 외
-에도 추적 (kprobes, uprobes, tracepoints 등)와 같은 BPF를 사용하는 다양한 다른 
-커널 하위 시스템이 있습니다.
+주요 하위 시스템은 BPF 프로그램을 연결할 수 있는 tc 및 XDP 입니다.
+
+아래는 XDP 구조를 설명한 그림입니다.
+::
+
+             +--------+           Redirect to any device
+       +-----+>  XDP  |------------------------------------------+
+       | +---+----+--++                                          |
+       | |        |  |                                           |
+       | |        |  |Forward                                    |
+       | |        v  |to stack             +--------+            |
+       | |      DROP |                     |sockets |            |
+       | |           |     +------------------------+            |
+       | |Edit and   +---->|    Network stack       |            |
+       | |bounce           |+----------+ +----------+            |
+       | |   +------------> |tc ingress| |tc egress||--------+   |
++------+-v---|+    packet   +-----------------------+ +------v---v-+
+| Net device |                                         | Net device|
++------------+                                         +-----------+
+
+XDP BPF 프로그램은 초기 네트워킹 드라이버 단계에 연결되어 패킷 수신시 BPF 프로그
+램 실행을 유발하게 합니다. 정의에 따르면 패킷이 소프트웨어보다 더 빠른 시점에서 
+처리 될 수 없으므로 최상의 패킷 처리 성능을 얻을 수 있습니다. 그러나 이러한 처리
+는 네트워킹 스택의 초기에 발생하기 때문에 스택은 패킷에서 아직 메타 데이터를 
+추출하지 못했습니다. 반면에 tc BPF 프로그램은 커널 스택에서 나중에 실행 되므로 
+더 많은 메타 데이터와 코어 커널 기능에 접근 할 수 있습니다. tc 및 XDP 프로그램 
+외 에도 추적 (kprobes, uprobes, tracepoints 등)와 같은 BPF를 사용하는 다양한 
+다른 커널 하위 시스템이 있습니다.
 
 다음 하위 절에서는 앞에서 열거한 BPF 아키텍처의 개별적인 측면에 대해 자세히 
 설명합니다.
@@ -113,7 +132,7 @@ BPF 명령어로 컴파일 가능한 C언어로 프로그램을 작성하기 위
 
 BPF는 11 개의 64 비트 레지스터와 32 비트 서브 레지스터로 구성 되며, 프로그램 
 카운터 및 512 바이트의 큰 BPF 스택 공간이 있습니다. BPF 레지스터의 이름은 
-``r0`` - ``r10``입니다. 작동 방식는 기본적으로 64 비트이며 32 비트 하위 레지
+``r0`` - ``r10`` 입니다. 작동 방식는 기본적으로 64 비트이며 32 비트 하위 레지
 스터는 특수 ALU(산술 논리 장치) 작업을 통해서만 액세스 할 수 있습니다. 32 비트 
 하위 하위 레지스터는 기록 될 때 64 비트로 zero-extend 됩니다.
 
@@ -134,6 +153,20 @@ BPF 호출 규약은 ``x86_64``, ``arm64`` 및 기타 ABI 를 직접 매핑 할�
 성능 저하 없이 일반적인 호출 상황을 포함하도록 모델링 되었습니다. 6 개 이상의 인자가 
 있는 호출은 현재 지원되지 않습니다. 커널에서 BPF (``BPF_call_0()`` 함수에서 ``BPF_call_5()`` 
 함수들)의 Helper 함수는 특별히 규칙을 염두에 두고 고안되었습니다.
+
+::
+
+R0 – rax      return value from function
+R1 – rdi      1st argument
+R2 – rsi      2nd argument
+R3 – rdx      3rd argument
+R4 – rcx      4th argument
+R5 – r8       5th argument
+R6 – rbx      callee saved
+R7 - r13      callee saved
+R8 - r14      callee saved
+R9 - r15      callee saved
+R10 – rbp     frame pointer ( read only )
 
 레지스터 ``r0`` 은 BPF 프로그램의 종료 값을 포함하는 레지스터 이기도합니다.
 종료 값의 의미는 프로그램 유형에 따라 정의됩니다. 커널에게 실행을 다시 전달 할때, 
@@ -172,8 +205,32 @@ verifier는 이를 제한 합니다. 그러나 한 BPF 프로그램이 다른 BP
 필요할 때 further 명령어을 사용하여 세트를 확장 할 수 있습니다. big-endian 머신에서 
 단일 64 비트 명령어의 명령어 인코딩은 최상위 비트(MSB)에서 최하위 비트(LSB)까지의 
 비트 시퀀스로 구성이 되며, ``op:8``, ``dst_reg:4``, ``src_reg:4``, ``off:16``, 
-``imm:32``, ``off``  그리고 ``imm``은 부호 타입 입니다. 인코딩은 커널 헤더의 일부이며 
+``imm:32``, ``off``  그리고 ``imm`` 은 부호 타입 입니다. 인코딩은 커널 헤더의 일부이며 
 ``linux/bpf_common.h`` 를 포함하는 ``linux/bpf.h`` 헤더 파일에 정의되어 있습니다.
+
+::
+
+msb                                                        lsb
++------------------------+----------------+----+----+--------+
+|immediate               |offset          |src |dst |opcode  |
+:%s/\s\+$//e
++------------------------+----------------+----+----+--------+
+
+8 bit opcode
+4 bit destination register (dst)
+4 bit source register (src)
+16 bit offset
+32 bit immediate (imm)
+
+@/include/uapi/linux/bpf.h
+struct bpf_insn {
+__u8    code;           /* opcode */
+__u8    dst_reg:4;      /* dest register */
+__u8    src_reg:4;      /* source register */
+__s16   off;            /* signed offset */
+__s32   imm;            /* signed immediate constant */
+};
+
 
 ``op`` defines the actual operation to be performed. Most of the encoding for ``op``
 has been reused from cBPF. The operation can be based on register or immediate
