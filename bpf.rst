@@ -50,26 +50,6 @@ LLVM은 BPF 백엔드를 제공하므로 clang과 같은 도구를 사용하여 
 마지막으로, 그렇지만 앞에서 설명한 것과 마찬가지로 중요한 것은 BPF를 사용하는 
 커널 서브 시스템은 BPF의 기반의 일부라는 것입니다. 이 문서에서 다루는 두 가지 
 주요 하위 시스템은 BPF 프로그램을 연결할 수 있는 tc 및 XDP 입니다.
-
-아래는 XDP 구조를 설명한 그림입니다.
-::
-
-             +--------+           Redirect to any device
-       +-----+>  XDP  |------------------------------------------+
-       | +---+----+--++                                          |
-       | |        |  |                                           |
-       | |        |  |Forward                                    |
-       | |        v  |to stack             +--------+            |
-       | |      DROP |                     |sockets |            |
-       | |           |     +------------------------+            |
-       | |Edit and   +---->|    Network stack       |            |
-       | |bounce           |+----------+ +----------+            |
-       | |   +------------> |tc ingress| |tc egress||--------+   |
-+------+-v---|+    packet   +-----------------------+ +------v---v-+
-| Net device |                                         | Net device|
-+------------+                                         +-----------+
-
-
 XDP BPF 프로그램은 초기 네트워킹 드라이버 단계에 연결되어 패킷 수신시 BPF 프로그
 램 실행을 유발하게 합니다. 정의에 따르면 패킷이 소프트웨어보다 더 빠른 시점에서 
 처리 될 수 없으므로 최상의 패킷 처리 성능을 얻을 수 있습니다. 그러나 이러한 처리
@@ -153,21 +133,7 @@ BPF 호출 규약은 ``x86_64``, ``arm64`` 및 기타 ABI 를 직접 매핑 할�
 단지 전달하며, 함수 인자들을 배치 하기 위한 추가적인 행동들은 없습니다.이 호출 규약은 
 성능 저하 없이 일반적인 호출 상황을 포함하도록 모델링 되었습니다. 6 개 이상의 인자가 
 있는 호출은 현재 지원되지 않습니다. 커널에서 BPF (``BPF_call_0()`` 함수에서 ``BPF_call_5()`` 
-함수들)의 Helper 함수는 특별히 규칙을 염두에 두고 고안되었습니다.
-
-::
-R0 – rax      return value from function
-R1 – rdi      1st argument
-R2 – rsi      2nd argument
-R3 – rdx      3rd argument
-R4 – rcx      4th argument
-R5 – r8       5th argument
-R6 – rbx      callee saved
-R7 - r13      callee saved
-R8 - r14      callee saved
-R9 - r15      callee saved
-R10 – rbp     frame pointer ( read only )
-
+함수)의 Helper 함수는 특별히 규칙을 염두에 두고 고안되었습니다.
 
 레지스터 ``r0`` 은 BPF 프로그램의 종료 값을 포함하는 레지스터 이기도합니다.
 종료 값의 의미는 프로그램 유형에 따라 정의됩니다. 커널에게 실행을 다시 전달 할때, 
@@ -192,13 +158,13 @@ BPF의 일반적인 연산은 포인터 연산을 수행하기 위해 64 비트 
 
 프로그램 당 최대 명령어은 4096 BPF 명령어 으로 제한이 되며 이는 설계적으로 모든 
 BPF 프로그램은 빨리 종료  되는것을 의미 합니다. 명령어 세트가 순방향 및 역방향 점프를 
-포함하지만 커널 내 BPF verifier는 루프를 금지 하므로 종료가 항상 보장됩니다. BPF 프로그램은 
-커널 내부에서 실행되기 때문에 verifier의 job는 시스템의 안정성에 영향을 주지 않고 실행이 
-안전하다는 것을 확인하는 것입니다. 즉, 명령어 세트 관점에서 루프를 구현할 수 있지만 
-verifier는 이를 제한 합니다. 그러나 한 BPF 프로그램이 다른 BPF 프로그램으로 이동할 수 
-있도록 하는 tail 호출 개념도 있습니다. 이것 또한, 32개의 상위 nesting 제한이 있으며, 
-일반적으로 프로그램의 논리 부분을 분리 하는데 사용되며, 예를 들어 다음 단계로 진입을 
-뜻합니다. 
+포함하지만 커널 내 BPF verifier는 루프를 금지 하므로 종료가 항상 보장됩니다. BPF 프로
+그램은 커널 내부에서 실행되기 때문에 verifier의 job는 시스템의 안정성에 영향을 주지 
+않고 실행이 안전하다는 것을 확인하는 것입니다. 즉, 명령어 세트 관점에서 루프를 구현할 
+수 있지만 verifier는 이를 제한 합니다. 그러나 한 BPF 프로그램이 다른 BPF 프로그램으로 
+이동할 수 있도록 하는 tail 호출 개념도 있습니다. 이것 또한, 32개의 상위 nesting 제한이 
+있으며, 일반적으로 프로그램의 논리 부분을 분리 하는데 사용되며, 예를 들어 다음 단계로 
+진입을 뜻합니다. 
 
 명령어 형식은 두 개의 피연산자 명령어들로 모델링 되며 주입 단계에서 BPF 명령어를 기본 
 명령어에 매핑하는 데 도움이 됩니다. 명령어 세트는 고정 크기이며 모든 명령어가 64 비트 
@@ -209,55 +175,32 @@ verifier는 이를 제한 합니다. 그러나 한 BPF 프로그램이 다른 BP
 ``imm:32``, ``off``  그리고 ``imm`` 은 부호 타입 입니다. 인코딩은 커널 헤더의 일부이며 
 ``linux/bpf_common.h`` 를 포함하는 ``linux/bpf.h`` 헤더 파일에 정의되어 있습니다.
 
-::
-msb                                                        lsb
-+------------------------+----------------+----+----+--------+
-|immediate               |offset          |src |dst |opcode  |
-+------------------------+----------------+----+----+--------+
+``op`` 는 수행 할 실제 작업을 정의합니다. ``op`` 에 대한 대부분의 인코딩은 cBPF에서 
+다시 사용 되었습니다. 동작은 레지스터 또는 즉각적인 피연산자를 기반으로 할 수 있습니다. 
+``op`` 자체의 인코딩은 사용할 방식(레지스터 기반 동작을 표현하기 위한 ``BPF_X`` 그리고 
+즉각적인 기반 각각 동작을 위한 ``BPF_K``)에 대한 정보를 제공합니다. 후자의 경우 대상 
+피연산자는 항상 레지스터 입니다. ``dst_reg`` 및 ``src_reg`` 는 모두 동작을 위해 사용될 
+레지스터 피연산자 (예 : ``r0`` - ``r9``)에 대한 추가 정보를 제공합니다.
+``off`` 는 예를 들어 BPF에 이용 가능한 스택 또는 다른 버퍼 (예를 들어, 맵 값, 패킷 데
+이터 등)를 어드레싱하거나, jump 명령어에서 타겟을 점프 와 같은 상대 오프셋을 제공 하기 
+위해 일부 명령어 에서 사용됩니다. ``imm`` 은 상수/즉각적인 값을 포함합니다.
 
-8 bit opcode
-4 bit destination register (dst)
-4 bit source register (src)
-16 bit offset
-32 bit immediate (imm)
+사용 가능한 ``op`` 명령어는 다양한 명령어 클래스로 분류 할 수 있습니다. 이러한 클래스는 
+``op`` 필드에도 인코딩 됩니다. 연산 필드는 최하위 비트(lsb) 부터 최상위 비트(msb)까지 
+이며, ``code:4 bits`` , ``source:1 bits`` 그리고 ``instruction class:3 bits`` 으로 나뉩
+니다. ``instruction class`` 필드는 일반적인 명령어 클래스이며, ``operation code`` 는 해당 
+클래스의 특정 연산 코드를 나타내며, ``source`` 필드는 소스 피연산자가 레지스터인지 
+즉각적인 값 인지를 알려 줍니다. 가능한 명령 클래스는 다음과 같습니다:
 
-@/include/uapi/linux/bpf.h
-struct bpf_insn {
-__u8    code;           /* opcode */
-__u8    dst_reg:4;      /* dest register */
-__u8    src_reg:4;      /* source register */
-__s16   off;            /* signed offset */
-__s32   imm;            /* signed immediate constant */
-};
-
-
-``op`` defines the actual operation to be performed. Most of the encoding for ``op``
-has been reused from cBPF. The operation can be based on register or immediate
-operands. The encoding of ``op`` itself provides information on which mode to use
-(``BPF_X`` for denoting register-based operations, and ``BPF_K`` for immediate-based
-operations respectively). In the latter case, the destination operand is always
-a register. Both ``dst_reg`` and ``src_reg`` provide additional information about
-the register operands to be used (e.g. ``r0`` - ``r9``) for the operation. ``off``
-is used in some instructions to provide a relative offset, for example, for addressing
-the stack or other buffers available to BPF (e.g. map values, packet data, etc),
-or jump targets in jump instructions. ``imm`` contains a constant / immediate value.
-
-The available ``op`` instructions can be categorized into various instruction
-classes. These classes are also encoded inside the ``op`` field. The ``op`` field
-is divided into (from MSB to LSB) ``code:4``, ``source:1`` and ``class:3``. ``class``
-is the more generic instruction class, ``code`` denotes a specific operational
-code inside that class, and ``source`` tells whether the source operand is a register
-or an immediate value. Possible instruction classes include:
-
-* ``BPF_LD``, ``BPF_LDX``: Both classes are for load operations. ``BPF_LD`` is
-  used for loading a double word as a special instruction spanning two instructions
-  due to the ``imm:32`` split, and for byte / half-word / word loads of packet data.
-  The latter was carried over from cBPF mainly in order to keep cBPF to BPF
-  translations efficient, since they have optimized JIT code. For native BPF
-  these packet load instructions are less relevant nowadays. ``BPF_LDX`` class
-  holds instructions for byte / half-word / word / double-word loads out of
-  memory. Memory in this context is generic and could be stack memory, map value
-  data, packet data, etc.
+* ``BPF_LD``, ``BPF_LDX`` : 두개 모두 load 동작을 위한 클래스 입니다. ``BPF_LD`` 는
+  ``imm 필드의 32 bits`` 와 패킷 데이터의 byte / half-word / word 로드 하기 의한 
+  두개의 명령어를 포괄하는 특수 명령어 이며, double word를 로드 하는데 사용합니다. 
+  이후 에는 주로 최적화 된 JIT 코드를 가지고 있기 때문에 cBPF를 BPF 변환으로 유지하기 
+  위해 주로 cBPF에서 가져와서 적용 되었습니다. 현재의 BPF의 경우에는 이러한 패킷 로드 
+  명령어는 관련성이 낮습니다. ``BPF_LDX`` 클래스는 메모리에서 
+  byte / half-word / word / double-word 로드에 대한 명령어를 저장합니다. 
+  이 컨텍스트의 메모리는 일반적이며 스택 메모리, 맵 값 데이터, 패킷 데이터 등 
+  일 수 있습니다.
 
 * ``BPF_ST``, ``BPF_STX``: Both classes are for store operations. Similar to ``BPF_LDX``
   the ``BPF_STX`` is the store counterpart and is used to store the data from a
