@@ -210,77 +210,65 @@ BPF 프로그램은 빨리 종료  되는것을 의미 합니다. 명령어 세�
   소스 피연산자가 즉각적인 값이라는 것을 메모리에 저장하기 위한 명령을
   제공함으로써 ``BPF_STX`` 와 유사합니다.
 
-* ``BPF_ALU``, ``BPF_ALU64``: Both classes contain ALU operations. Generally,
-  ``BPF_ALU`` operations are in 32 bit mode and ``BPF_ALU64`` in 64 bit mode.
-  Both ALU classes have basic operations with source operand which is register-based
-  and an immediate-based counterpart. Supported by both are add (``+``), sub (``-``),
-  and (``&``), or (``|``), left shift (``<<``), right shift (``>>``), xor (``^``),
-  mul (``*``), div (``/``), mod (``%``), neg (``~``) operations. Also mov (``<X> := <Y>``)
-  was added as a special ALU operation for both classes in both operand modes.
-  ``BPF_ALU64`` also contains a signed right shift. ``BPF_ALU`` additionally
-  contains endianness conversion instructions for half-word / word / double-word
-  on a given source register.
+* ``BPF_ALU``, ``BPF_ALU64``: 두개의 모두 ALU 동작을 포함한 클래스 입니다. 일반적으로,
+  ``BPF_ALU`` 동작은 32bit 방식 이며, ``BPF_ALU64`` 는 64bit 방식 입니다. 두 ALU 클래스
+  는 모두 레지스터 기반의 원본 피연산자와 즉각적인 기반의 피연산자로 기본 연산을
+  수행합니다. add(``+``), sub(``-``), and(``&``), or(``|``), left shift(``<<``),
+  right shift (``>>``), xor(``^``), mul (``*``), div (``/``), mod (``%``), neg ``(~``)
+  연산을 두개의 class가 지원합니다. 또한 mov(``<X> := <Y>``)는 두 피연산자 방식에서 두 클래스의
+  특수한 ALU 연산으로 추가되었습니다. ``BPF_ALU64`` 에는 signed right shift도 포함됩니다.
+  ``BPF_ALU`` 는 주어진 source 레지스터에 대한 half-word / word / double-word 에 대한
+  엔디안 변환 명령을 추가로 포함합니다.
 
-* ``BPF_JMP``: This class is dedicated to jump operations. Jumps can be unconditional
-  and conditional. Unconditional jumps simply move the program counter forward, so
-  that the next instruction to be executed relative to the current instruction is
-  ``off + 1``, where ``off`` is the constant offset encoded in the instruction. Since
-  ``off`` is signed, the jump can also be performed backwards as long as it does not
-  create a loop and is within program bounds. Conditional jumps operate on both,
-  register-based and immediate-based source operands. If the condition in the jump
-  operations results in ``true``, then a relative jump to ``off + 1`` is performed,
-  otherwise the next instruction (``0 + 1``) is performed. This fall-through
-  jump logic differs compared to cBPF and allows for better branch prediction as it
-  fits the CPU branch predictor logic more naturally. Available conditions are
-  jeq (``==``), jne (``!=``), jgt (``>``), jge (``>=``), jsgt (signed ``>``), jsge
-  (signed ``>=``), jlt (``<``), jle (``<=``), jslt (signed ``<``), jsle (signed
-  ``<=``) and jset (jump if ``DST & SRC``). Apart from that, there are three
-  special jump operations within this class: the exit instruction which will leave
-  the BPF program and return the current value in ``r0`` as a return code, the call
-  instruction, which will issue a function call into one of the available BPF helper
-  functions, and a hidden tail call instruction, which will jump into a different
-  BPF program.
+* ``BPF_JMP``: 점프 동작 전용 클래스 입니다. 점프는 무조건 그리고 조건부 일 수 있습니다.
+  무조건 점프는 단순히 프로그램 카운터를 앞으로 이동시켜 현재 명령과 관련하여 실행될
+  다음 명령이 ``off + 1`` 이 되도록 하며, 여기서 ``off`` 는 명령에 인코딩 된 상수 오프셋
+  입니다. ``off`` 가 signed 때문에 점프는 루프를 생성하지 않고 프로그램 범위 내에있는
+  한 다시 실행할 수 있습니다. 조건부 점프는 레지스터 기반 및 즉각적인 기반 소스 피연산자
+  모두에서 작동합니다. 점프 작업의 조건이 ``참`` 일 경우, ``off + 1`` 로 상대 점프가 수행되고,
+  그렇지 않으면 다음 명령 (0 + 1)이 수행됩니다. 이 fall-through jump 로직은 cBPF와 비교하여
+  다르므로 보다 자연스럽게 CPU 분기 예측 로직에 적합하므로 더 나은 분기 예측이 가능하게 됩니다.
+  사용 가능한 조건은 jeq (``==``),  jne (``!=``), jgt(``>``), jge (``>=``), jsgt (signed ``>``),
+  jsge (signed ``>=``), jlt (``<``), jle (``<=``), jslt (signed ``<``), jsle (signed ``<=``) 그리고
+  jset (만약 ``DST & SRC`` 점프). 그 외에도 이 클래스에는 세 가지 특별한 점프 작업들이 있으며:
+  다시말해서, BPF 프로그램을 종료하고 ``r0`` 의 현재 값을 반환 코드로 반환하는 종료 명령,
+  사용 가능한 BPF helper 함수 중 하나로 함수 호출을 발행하는 콜 명령어 및 다른 BPF 프로
+  그램으로 점프하는 tail 호출 명령어가 있습니다.
 
-The Linux kernel is shipped with a BPF interpreter which executes programs assembled in
-BPF instructions. Even cBPF programs are translated into eBPF programs transparently
-in the kernel, except for architectures that still ship with a cBPF JIT and
-have not yet migrated to an eBPF JIT.
+Linux 커널은 BPF 명령어로 어셈블된 프로그램을 실행하는 BPF 인터프리터와 함께 제공됩니다.
+아직 cBPF JIT와 함께 제공되고 아직 eBPF JIT로 마이그레이션되지 않은 아키텍처를 제외하고는
+cBPF 프로그램도 커널에서 투명하게 eBPF 프로그램으로 변환됩니다.
 
-Currently ``x86_64``, ``arm64``, ``ppc64``, ``s390x``, ``mips64``, ``sparc64`` and
-``arm`` architectures come with an in-kernel eBPF JIT compiler.
+현재 ``x86_64``, ``arm64``, ``ppc64``, ``s390x``, ``mips64``, ``sparc64`` 및 ``arm`` 아키텍처
+에는 커널 내 eBPF JIT 컴파일러가 제공됩니다.
 
-All BPF handling such as loading of programs into the kernel or creation of BPF maps
-is managed through a central ``bpf()`` system call. It is also used for managing map
-entries (lookup / update / delete), and making programs as well as maps persistent
-in the BPF file system through pinning.
+프로그램을 커널에 로드하거나 BPF 맵을 작성하는 것와 같은 모든 BPF 처리는 중앙 ``bpf()``
+시스템 호출을 통해 관리됩니다. 또한 맵 엔트리 (lookup / update / delete)를 관리하고,
+프로그램뿐만 아니라 고정 된 맵을 BPF 파일 시스템에 고정시키는 데에도 사용됩니다.
 
-Helper Functions
+Helper 함수
 ----------------
 
-Helper functions are a concept which enables BPF programs to consult a core kernel
-defined set of function calls in order to retrieve / push data from / to the
-kernel. Available helper functions may differ for each BPF program type,
-for example, BPF programs attached to sockets are only allowed to call into
-a subset of helpers compared to BPF programs attached to the tc layer.
-Encapsulation and decapsulation helpers for lightweight tunneling constitute
-an example of functions which are only available to lower tc layers, whereas
-event output helpers for pushing notifications to user space are available to
-tc and XDP programs.
+Helper 함수는 BPF 프로그램이 코어 커널에 정의된 함수 콜 참조하여 커널에서 데이터를
+검색 / 푸시 할수있게 해주는 개념입니다. 사용 가능한 Helper 기능은 각 BPF 프로그램
+유형 마다 다를 수 있으며, 예를 들어, 소켓에 연결된 BPF 프로그램은 TC 계층에 연결된
+BPF 프로그램과 비교하여 Helper 하위 집합 만 호출 할 수 있습니다.
+경량 터널링을 위한 캡슐화 및 캡슐해제 Helper는 tc 레이어 아래쪽에서 사용할 수 있는
+기능의 예를 구성하는 반면 사용자 공간에 알림을 푸시 하기위한 event output Helper는
+tc 및 XDP 프로그램에서 사용 할 수 있습니다.
 
-Each helper function is implemented with a commonly shared function signature
-similar to system calls. The signature is defined as:
+각 helper 함수는 시스템 호출과 유사한 공통적으로 공유되는 함수 대표로 구현됩니다.
+대표는 다음과 같이 정의됩니다:
 
 ::
 
     u64 fn(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
 
-The calling convention as described in the previous section applies to all
-BPF helper functions.
+이전 섹션에서 설명한대로 콜 규칙은 모든 BPF helper 함수에 적용됩니다.
 
-The kernel abstracts helper functions into macros ``BPF_CALL_0()`` to ``BPF_CALL_5()``
-which are similar to those of system calls. The following example is an extract
-from a helper function which updates map elements by calling into the
-corresponding map implementation callbacks:
+커널은 helper 함수를 매크로 ``BPF_call_0 ()`` 에서 ``BPF_call_5 ()`` 까지 시스템 콜
+과 유사하게 규격화 하였습니다. 다음 예제는 map 구현에 해당하는 콜백을 콜하여 맵 요소
+를 업데이트 하는 helper 함수를 발췌하였습니다.
 
 ::
 
@@ -301,43 +289,41 @@ corresponding map implementation callbacks:
         .arg4_type      = ARG_ANYTHING,
     };
 
-There are various advantages of this approach: while cBPF overloaded its
-load instructions in order to fetch data at an impossible packet offset to
-invoke auxiliary helper functions, each cBPF JIT needed to implement support
-for such a cBPF extension. In case of eBPF, each newly added helper function
-will be JIT compiled in a transparent and efficient way, meaning that the JIT
-compiler only needs to emit a call instruction since the register mapping
-is made in such a way that BPF register assignments already match the
-underlying architecture's calling convention. This allows for easily extending
-the core kernel with new helper functionality.
+이러한 접근에는 여러 가지 장점이 있습니다: 기존의 cBPF는 보조 helper 함수를
+호출 하기 위해 무리한 패킷 오프셋에서 데이터를 가져 오기 위해 로드 명령어를
+오버로드 했으며, 각 cBPF JIT는 이러한 cBPF 확장에 대한 지원을 구현해야했습
+니다.  하지만 eBPF의 경우, 새로 추가된 각 helper함수는 JIT 가 투명하고 효율
+적인 컴파일된 컴파일이 되며, 이러한 의미는 JIT 컴파일러는 레지스터 매핑과
+같은 방식으로 이루어지기 때문에 단지 호출 명령을 내보내며 되며, 레지스터
+매핑과 같은 방식은 BPF 레지스터 할당은 이미 기본 아키텍처의 호출 개념과
+일치합니다. 이렇게 하면 새로운 helper 기능으로 core 커널을 쉽게 확장 할 수
+있습니다. 하지만 모든 BPF helper 함수는 core 커널의 일부이며 커널 모듈을
+통해 확장하거나 추가 할 수 없습니다.
 
-The aforementioned function signature also allows the verifier to perform type
-checks. The above ``struct bpf_func_proto`` is used to hand all the necessary
-information which need to be known about the helper to the verifier, so that
-the verifier can make sure that the expected types from the helper match the
-current contents of the BPF program's analyzed registers.
+앞서 언급한 함수 대표는 또한 verifier가 유형 검사를 수행 하도록 허용합니다.
+구조체 ``bpf_func_proto`` 는 helper에 대해 알 필요가 있는 모든 필요한 정보를
+verifier에게 넘겨주기 위해 사용되며, 따라서 verifier는 helper가 BPF 프로그램
+의 분석 된 레지스터의 현재 내용과 일치에서 예상되는 유형을 확인할 수 있습니다.
 
-Argument types can range from passing in any kind of value up to restricted
-contents such as a pointer / size pair for the BPF stack buffer, which the
-helper should read from or write to. In the latter case, the verifier can also
-perform additional checks, for example, whether the buffer was previously
-initialized.
+인수 유형은 모든 종류의 값 전달에서 BPF 스택 버퍼에 대한 포인터 / 크기 쌍까지
+다양합니다. 후자의 경우, verifier는 예를 들어 버퍼가 이전에 초기화되었는지
+여부와 같은 추가 검사를 수행 할 수도 있습니다.
 
 Maps
 ----
 
-Maps are efficient key / value stores that reside in kernel space. They can be
-accessed from a BPF program in order to keep state among multiple BPF program
-invocations. They can also be accessed through file descriptors from user space
-and can be arbitrarily shared with other BPF programs or user space applications.
+map은 커널 공간에 있는 효율적인 키 / 값 저장소입니다. 여러 BPF 프로그램 호출 간에
+상태를 유지하기 위해 BPF 프로그램에서 액세스 할 수 있습니다. 또한 사용자 공간의
+파일 설명자를 통해 액세스 할 수 있으며 다른 BPF 프로그램이나 사용자 공간 응용
+프로그램과 마음대로 공유 할 수 있습니다.
 
-BPF programs which share maps with each other are not required to be of the same
-program type, for example, tracing programs can share maps with networking programs.
-A single BPF program can currently access up to 64 different maps directly.
+서로 map을 공유하는 BPF 프로그램은 동일한 프로그램 유형이 아니어야 하며, 예를 들어,
+trace 프로그램은 네트워크 프로그램 과 map을 공유 할 수 있습니다. 단일 BPF 프로그램
+은 현재 최대 64 개의 다른 map에 직접 액세스 할 수 있습니다.
 
-Map implementations are provided by the core kernel. There are generic maps with
-per-CPU and non-per-CPU flavor that can read / write arbitrary data, but there are
-also a few non-generic maps that are used along with helper functions.
+map 구현은 코어 커널에 의해 제공됩니다. 마음대로 데이터를 읽고 쓸 수있는 각 CPU
+마다 일반적인 map 및 각 CPU 마다 아닌 일반적인 map들 있지만 helper 함수와 함께
+사용 되는 일부 일반적 이지 않는 map도 있습니다.
 
 Generic maps currently available:
 
