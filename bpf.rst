@@ -69,6 +69,7 @@ LLVM은 BPF 백엔드를 제공하므로 clang과 같은 도구를 사용하여 
 | Net device |                                         | Net device|
 +------------+                                         +-----------+
 
+
 XDP BPF 프로그램은 초기 네트워킹 드라이버 단계에 연결되어 패킷 수신시 BPF 프로그
 램 실행을 유발하게 합니다. 정의에 따르면 패킷이 소프트웨어보다 더 빠른 시점에서 
 처리 될 수 없으므로 최상의 패킷 처리 성능을 얻을 수 있습니다. 그러나 이러한 처리
@@ -155,7 +156,6 @@ BPF 호출 규약은 ``x86_64``, ``arm64`` 및 기타 ABI 를 직접 매핑 할�
 함수들)의 Helper 함수는 특별히 규칙을 염두에 두고 고안되었습니다.
 
 ::
-
 R0 – rax      return value from function
 R1 – rdi      1st argument
 R2 – rsi      2nd argument
@@ -167,6 +167,7 @@ R7 - r13      callee saved
 R8 - r14      callee saved
 R9 - r15      callee saved
 R10 – rbp     frame pointer ( read only )
+
 
 레지스터 ``r0`` 은 BPF 프로그램의 종료 값을 포함하는 레지스터 이기도합니다.
 종료 값의 의미는 프로그램 유형에 따라 정의됩니다. 커널에게 실행을 다시 전달 할때, 
@@ -209,11 +210,9 @@ verifier는 이를 제한 합니다. 그러나 한 BPF 프로그램이 다른 BP
 ``linux/bpf_common.h`` 를 포함하는 ``linux/bpf.h`` 헤더 파일에 정의되어 있습니다.
 
 ::
-
 msb                                                        lsb
 +------------------------+----------------+----+----+--------+
 |immediate               |offset          |src |dst |opcode  |
-:%s/\s\+$//e
 +------------------------+----------------+----+----+--------+
 
 8 bit opcode
