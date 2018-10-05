@@ -325,85 +325,85 @@ map 구현은 코어 커널에 의해 제공됩니다. 마음대로 데이터를
 마다 일반적인 map 및 각 CPU 마다 아닌 일반적인 map들 있지만 helper 함수와 함께
 사용 되는 일부 일반적 이지 않는 map도 있습니다.
 
-지금 사용 가능한 일반적인 map은 ``BPF_MAP_TYPE_HASH``, ``BPF_MAP_TYPE_ARRAY``, 
-``BPF_MAP_TYPE_PERCPU_HASH``, ``BPF_MAP_TYPE_PERCPU_ARRAY``, ``BPF_MAP_TYPE_LRU_HASH``, 
-``BPF_MAP_TYPE_LRU_PERCPU_HASH`` 와 ``BPF_MAP_TYPE_LPM_TRIE`` 가 있습니다. 
-그들은 서로 다른 의미와 성능 특성을 지닌 다른 백엔드를 구현되었지만 조회, 업데이트 또는 
+지금 사용 가능한 일반적인 map은 ``BPF_MAP_TYPE_HASH``, ``BPF_MAP_TYPE_ARRAY``,
+``BPF_MAP_TYPE_PERCPU_HASH``, ``BPF_MAP_TYPE_PERCPU_ARRAY``, ``BPF_MAP_TYPE_LRU_HASH``,
+``BPF_MAP_TYPE_LRU_PERCPU_HASH`` 와 ``BPF_MAP_TYPE_LPM_TRIE`` 가 있습니다.
+그들은 서로 다른 의미와 성능 특성을 지닌 다른 백엔드를 구현되었지만 조회, 업데이트 또는
 삭제 작업을 수행하기 위해 BPF herlper 함수들의 동일한 공통 세트를 사용합니다.
 
 일반적이지 않는 map은 현재 커널에서 ``BPF_MAP_TYPE_PROG_ARRAY``, ``BPF_MAP_TYPE_PERF_EVENT_ARRAY``,
 ``BPF_MAP_TYPE_CGROUP_ARRAY``, ``BPF_MAP_TYPE_STACK_TRACE``, ``BPF_MAP_TYPE_ARRAY_OF_MAPS``,
-``BPF_MAP_TYPE_HASH_OF_MAPS`` 가 있습니다. 예를 들어, ``BPF_MAP_TYPE_PROG_ARRAY`` 는 
-다른 BPF 프로그램을 저장하는 배열 map이며, ``BPF_MAP_TYPE_ARRAY_OF_MAPS`` 및 
-``BPF_MAP_TYPE_HASH_OF_MAPS`` 는 런타임시 전체 BPF 맵을 원자적 으로 대체 할 수 있도록  
+``BPF_MAP_TYPE_HASH_OF_MAPS`` 가 있습니다. 예를 들어, ``BPF_MAP_TYPE_PROG_ARRAY`` 는
+다른 BPF 프로그램을 저장하는 배열 map이며, ``BPF_MAP_TYPE_ARRAY_OF_MAPS`` 및
+``BPF_MAP_TYPE_HASH_OF_MAPS`` 는 런타임시 전체 BPF 맵을 원자적 으로 대체 할 수 있도록
 다른 맵에 대한 포인터를 보유합니다. 이러한 유형의 map은 BPF 프로그램 콜을 통해 추가
-(비-데이터) 상태가 유지되어야 하기 때문에 BPF helper 함수를 통해 구현 하기에는 부적합한 
+(비-데이터) 상태가 유지되어야 하기 때문에 BPF helper 함수를 통해 구현 하기에는 부적합한
 문제를 해결 합니다.
 
 객체 고정
 --------------
 
-BPF 맵과 프로그램은 커널 리소스 역할을 하며 커널의 익명 inode가 지원하는 파일 
-디스크립터를 통해서만 액세스 할 수 있으며, 장점 인것 뿐만 아니라 여러 가지 
+BPF 맵과 프로그램은 커널 리소스 역할을 하며 커널의 익명 inode가 지원하는 파일
+디스크립터를 통해서만 액세스 할 수 있으며, 장점 인것 뿐만 아니라 여러 가지
 단점이 있습니다:
 
-사용자 공간 응용 프로그램은 대부분의 파일 디스크립터 관련 API, Unix 도메인 소켓을 
-통과하는 파일 디스크립터 등을 투명하게  사용할 수 있지만 동시에 파일 디스크립터는 
+사용자 공간 응용 프로그램은 대부분의 파일 디스크립터 관련 API, Unix 도메인 소켓을
+통과하는 파일 디스크립터 등을 투명하게  사용할 수 있지만 동시에 파일 디스크립터는
 프로세스의 수명에만 제한되기 때문에 map 공유와 같은 옵션이 동작하는 것은 어려워
 집니다.
 
-따라서 iproute2 에서는 tc 또는 XDP는 커널에 프로그램을 로드하고 결국 종료되는 것 
+따라서 iproute2 에서는 tc 또는 XDP는 커널에 프로그램을 로드하고 결국 종료되는 것
 같은 특정 사용 사례에서는  여러가지 복잡한 문제가 발생합니다. 앞의 문제를 포함하여
 , 또한 데이터 경로의 ingress 및 engress 위치 사이에서 맵을 공유하는 경우 와
-같이 사용자 공간 측면에서도 map에 액세스 할 수 없습니다. 또한 사용자 공간 측면에서 
-map에 대한 액세스를 사용할 수 없습니다. 또한 타사 응용 프로그램은 BPF 프로그램 
+같이 사용자 공간 측면에서도 map에 액세스 할 수 없습니다. 또한 사용자 공간 측면에서
+map에 대한 액세스를 사용할 수 없습니다. 또한 타사 응용 프로그램은 BPF 프로그램
 런타임 중에 map 내용에 대해 모니터링 하거나 업데이트 하려고 할수 있습니다.
 
-이러한 한계를 극복 하기 위해서 BPF map 과 프로그램은 객체 고정 이라고 불리는 고정이 
-될수 있는  최소한의 커널 공간 BPF 파일 시스템 (/sys/fs/bpf)이 구현 되었습니다. 
-따라서 BPF 시스템 콜은 이전에 고정 된 객체를 고정(``BPF_OBJ_PIN``)하거나 검색(``BPF_OBJ_GET``) 
+이러한 한계를 극복 하기 위해서 BPF map 과 프로그램은 객체 고정 이라고 불리는 고정이
+될수 있는  최소한의 커널 공간 BPF 파일 시스템 (/sys/fs/bpf)이 구현 되었습니다.
+따라서 BPF 시스템 콜은 이전에 고정 된 객체를 고정(``BPF_OBJ_PIN``)하거나 검색(``BPF_OBJ_GET``)
 할 수있는 두 개의 새로운 명령으로 확장 되었습니다.
 
-예를 들어 tc와 같은 도구는 진입 및 이탈에서 map를 공유하기 위해 이러한 구조를 
-사용합니다. BPF 관련 파일 시스템은 싱글톤 패턴이 아니며 다중 마운트 인스턴스, 
+예를 들어 tc와 같은 도구는 진입 및 이탈에서 map를 공유하기 위해 이러한 구조를
+사용합니다. BPF 관련 파일 시스템은 싱글톤 패턴이 아니며 다중 마운트 인스턴스,
 하드 및 소프트 링크 등을 지원합니다.
 
 Tail 호출
 ----------
 
-BPF와 함께 사용할 수있는 또 다른 개념을 tail 호출 이라고합니다. Tail 호출은 하나의 
+BPF와 함께 사용할 수있는 또 다른 개념을 tail 호출 이라고합니다. Tail 호출은 하나의
 BPF 프로그램이 이전 프로그램으로 돌아 가지 않고 다른 프로그램을 콜 할수 있게 해주는
 메커니즘으로 보여질수 있습니다. 이러한 콜은 함수 콜과 달리 최소한의 오버 헤드를 가
-지며 동일한 스택 프레임을 재사용하여 긴 점프로 구현됩니다. 
+지며 동일한 스택 프레임을 재사용하여 긴 점프로 구현됩니다.
 
-이러한 프로그램은 서로 관계없이 확인되므로 CPU 마다 맵을 스크래치 버퍼로 전송하거나 
+이러한 프로그램은 서로 관계없이 확인되므로 CPU 마다 맵을 스크래치 버퍼로 전송하거나
 tc 프로그램의 경우 ``cb[]`` 영역과 같은 ``skb`` 필드를 사용해야합니다.
 
 동일한 유형의 프로그램만 tail 콜 할 수 있으며, 또한 JIT 컴파일과 관련하여 일치해야
-하므로 JIT 컴파일되거나 해석 된  프로그램 만 콜 할 수 있지만 함께 혼재되서 구동 할 
+하므로 JIT 컴파일되거나 해석 된  프로그램 만 콜 할 수 있지만 함께 혼재되서 구동 할
 수는 없습니다. tail 호출을 수행하는 데는 두 가지 구성 요소가 필요하며:  첫 번째 요
 소은 사용자 공간에서 키 / 값으로 덧붙일수 있는  프로그램 배열(``BPF_MAP_TYPE_PROG_ARRAY``)
-이라는 특수한 맵을 설정해야 하며, 여기서 값은 tail 호출 된 BPF 프로그램이라는 
-파일 디스크립터 이며, 두 번째 요소는 컨텍스트 다시 말해 프로그램 배열에 대한 참조 
-및 조회 키가 전달되는 ``bpf_tail_call()`` helper입니다. 그런 다음 커널은 이 helper 
-콜을 특수화 된 BPF 명령어로 직접 인라인 합니다. 이러한 프로그램 배열은 현재 사용자 
+이라는 특수한 맵을 설정해야 하며, 여기서 값은 tail 호출 된 BPF 프로그램이라는
+파일 디스크립터 이며, 두 번째 요소는 컨텍스트 다시 말해 프로그램 배열에 대한 참조
+및 조회 키가 전달되는 ``bpf_tail_call()`` helper입니다. 그런 다음 커널은 이 helper
+콜을 특수화 된 BPF 명령어로 직접 인라인 합니다. 이러한 프로그램 배열은 현재 사용자
 공간 측면에서 쓰기 전용입니다
 
-커널은 전달 된 파일 디스크립터에서 관련 BPF 프로그램을 찾고 지정된 map 슬롯에서 
-프로그램 포인터를 원자적으로 대체합니다. 제공된 키에서 map 항목을 찾지 못한다면, 
-커널은 "fall-through" 및 ``bpf_taill_call()`` 다음에 오는 명령으로 이전 프로그램의 
-실행을 계속합니다. taill 호출은 강력한 유틸리티 이며, 예를 들어 파싱 네트워크 헤더는 
-taill 콜을 통해 구조화 될 수 있습니다. 런타임 중에는 기능을 원자적으로 추가하거나 
+커널은 전달 된 파일 디스크립터에서 관련 BPF 프로그램을 찾고 지정된 map 슬롯에서
+프로그램 포인터를 원자적으로 대체합니다. 제공된 키에서 map 항목을 찾지 못한다면,
+커널은 "fall-through" 및 ``bpf_taill_call()`` 다음에 오는 명령으로 이전 프로그램의
+실행을 계속합니다. taill 호출은 강력한 유틸리티 이며, 예를 들어 파싱 네트워크 헤더는
+taill 콜을 통해 구조화 될 수 있습니다. 런타임 중에는 기능을 원자적으로 추가하거나
 대체 할 수 있으므로 BPF 프로그램의 실행 동작이 변경됩니다
 
 BPF 호출에서 BPF 호출
 ---------------------
 
-BPF helper 콜과 BPF tail 콜 외에도 BPF 핵심 구조에 추가 된 최신 기능은 
-BPF 호출에서 BPF 호출 입니다. 이 기능이 커널에 도입되기 전에, 일반적인 
-BPF C 프로그램은 다음과 같은 재사용 가능한 코드를 선언 해야 했으며, 
-예를 들어, 헤더에 ``always_inline`` 으로 존재하며 LLVM이 컴파일 하고 
-BPF 객체 모든 함수들이 인라인이 되며, 그리하여 생성된 오프젝트 파일에 
+BPF helper 콜과 BPF tail 콜 외에도 BPF 핵심 구조에 추가 된 최신 기능은
+BPF 호출에서 BPF 호출 입니다. 이 기능이 커널에 도입되기 전에, 일반적인
+BPF C 프로그램은 다음과 같은 재사용 가능한 코드를 선언 해야 했으며,
+예를 들어, 헤더에 ``always_inline`` 으로 존재하며 LLVM이 컴파일 하고
+BPF 객체 모든 함수들이 인라인이 되며, 그리하여 생성된 오프젝트 파일에
 여러번 복제되어 인위적으로 코드 크기가 늘어나게됩니다:
 
   ::
@@ -433,10 +433,10 @@ BPF 객체 모든 함수들이 인라인이 되며, 그리하여 생성된 오�
 
     char __license[] __section("license") = "GPL";
 
-이것이 필요했던 주된 이유는 BPF 프로그램 로더뿐만 아니라 verifier, 인터프리터 
+이것이 필요했던 주된 이유는 BPF 프로그램 로더뿐만 아니라 verifier, 인터프리터
 및 JIT에서 함수 호출 지원이 부족했기 때문입니다. Linux 커널 4.16 및 LLVM 6.0
-부터이 제한이 해제 되었으며 BPF 프로그램은 더 이상 always_inline을 사용할 
-필요가 없습니다. 따라서 이전에 표시된 BPF 예제 코드는 다음과 같이 자연스럽게 
+부터이 제한이 해제 되었으며 BPF 프로그램은 더 이상 always_inline을 사용할
+필요가 없습니다. 따라서 이전에 표시된 BPF 예제 코드는 다음과 같이 자연스럽게
 다시 작성 될 수 있습니다:
 
   ::
@@ -461,32 +461,32 @@ BPF 객체 모든 함수들이 인라인이 되며, 그리하여 생성된 오�
 
     char __license[] __section("license") = "GPL";
 
-``x86_64`` 및 ``arm64`` 와 같은 메인스트림 BPF JIT 컴파일러는 BPF 에서 
-BPF 호출을 지원합니다. BPF에서 BPF 호출은 생성 된 BPF 코드 크기를 많이 
+``x86_64`` 및 ``arm64`` 와 같은 메인스트림 BPF JIT 컴파일러는 BPF 에서
+BPF 호출을 지원합니다. BPF에서 BPF 호출은 생성 된 BPF 코드 크기를 많이
 줄여 CPU의 명령어 캐시에 더 우호적이기 때문에 중요한 성능 최적화입니다.
 
-BPF helper 함수에서 알려진 콜 규칙은 BPF에서 BPF 호출에도 적용되며, 
+BPF helper 함수에서 알려진 콜 규칙은 BPF에서 BPF 호출에도 적용되며,
 이 의미는 ``r1`` ~ ``r5`` 는 콜 수신자에게 인수를 전달하기위한 것이며
-결과는 r0에 리턴됩니다. ``r1`` ~ ``r5`` 는 스크래치 레지스터이며 
+결과는 r0에 리턴됩니다. ``r1`` ~ ``r5`` 는 스크래치 레지스터이며
 ``r6`` ~ ``r9`` 는 일반적인 콜을 통해 유지됩니다. 각각 허용 된 콜
 프레임의 최대 중첩 호출 수는 ``8`` 입니다. 호출 송신자는 호출 송신자
-의 포인터 (예를 들어서, 호출 송신자의 스택 프레임에 대한 포인터)를 
-호출 수신자에게 전달할 수 있지만 역방향으로는 동작하지 않습니다. 
+의 포인터 (예를 들어서, 호출 송신자의 스택 프레임에 대한 포인터)를
+호출 수신자에게 전달할 수 있지만 역방향으로는 동작하지 않습니다.
 
 BPF에서 BPF 호출은 현재 BPF tail 호출과 호환되지 않으며,
-후자는 현상태의 스택 설정을 그대로 재사용 할 것을 요구하기 때문에, 
-전자는 추가 스택 프레임을 추가하므로 tail 호출의 예상된 레이아웃을 
-변경이됩니다. 
+후자는 현상태의 스택 설정을 그대로 재사용 할 것을 요구하기 때문에,
+전자는 추가 스택 프레임을 추가하므로 tail 호출의 예상된 레이아웃을
+변경이됩니다.
 
-BPF JIT 컴파일러는 각 함수 본체에 대해 별도의 이미지를 내보내고 
-나중에 최종 JIT 경로에서 이미지의 함수 호출 주소를 수정합니다. 
-BPF 에 BPF 호출은 일반적인 BPF helper 호출로 처리 할 수 있다는 
+BPF JIT 컴파일러는 각 함수 본체에 대해 별도의 이미지를 내보내고
+나중에 최종 JIT 경로에서 이미지의 함수 호출 주소를 수정합니다.
+BPF 에 BPF 호출은 일반적인 BPF helper 호출로 처리 할 수 있다는
 점에서 JIT에 대한 최소한의 변경이 필요하다는 것이 입증되었습니다.
 
 JIT
 ---
 
-64 비트 ``x86_64``, ``arm64``, ``ppc64``, ``s390x``, ``mips64``, 
+64 비트 ``x86_64``, ``arm64``, ``ppc64``, ``s390x``, ``mips64``,
 ``sparc64`` 및 32 비트 ``arm`` 아키텍처는 모두 커널 내 eBPF JIT 컴파일러
 와 함께 제공되며 모든 기능이 동일하며 다음을 통해 활성화 할 수 있습니다:
 
@@ -500,11 +500,11 @@ remaining architectures supported by the Linux kernel which do not have a BPF JI
 compiler at all need to run eBPF programs through the in-kernel interpreter.
 
 32 비트 ``mips``, ``ppc`` 및 ``sparc`` 아키텍처에는 현재 cBPF JIT 컴파일러
-가 있습니다. cBPF JIT와 BPF JIT 컴파일러가 없는 Linux 커널이 지원하는 
-나머지 아키텍처는 모두 커널 내 인터프리터를 통해  eBPF 프로그램을 실행할 
-필요가 있습니다. 
+가 있습니다. cBPF JIT와 BPF JIT 컴파일러가 없는 Linux 커널이 지원하는
+나머지 아키텍처는 모두 커널 내 인터프리터를 통해  eBPF 프로그램을 실행할
+필요가 있습니다.
 
-커널의 소스 트리에서 eBPF JIT 지원은 ``HAVE_EBPF_JIT`` 에 대한 grep을 
+커널의 소스 트리에서 eBPF JIT 지원은 ``HAVE_EBPF_JIT`` 에 대한 grep을
 통해 쉽게 확인할 수 있습니다:
 
 ::
@@ -518,24 +518,24 @@ compiler at all need to run eBPF programs through the in-kernel interpreter.
     arch/sparc/Kconfig:     select HAVE_EBPF_JIT   if SPARC64
     arch/x86/Kconfig:       select HAVE_EBPF_JIT   if X86_64
 
-JIT 컴파일러는 BPF 프로그램의 실행 속도를 인터프리터와 비교하여 명령 마다 비용을 
-크게 줄여주므로 속도를 크게 높입니다. 명령어는 종종 기본 아키텍처의 기본 명령어로 
-1:1로 매핑 될 수 있습니다. 이렇게 하면 실행 가능 이미지 크기가 줄어들며, CPU에 
-우호적인 더 많은 명령어 캐시가 됩니다. 특히 ``x86`` 과 같은 CISC 명령어 세트의 
-경우 JITs는 주어진 명령어에 대해 가능한 가장 짧은 opcode를 변환하여 프로그램 
+JIT 컴파일러는 BPF 프로그램의 실행 속도를 인터프리터와 비교하여 명령 마다 비용을
+크게 줄여주므로 속도를 크게 높입니다. 명령어는 종종 기본 아키텍처의 기본 명령어로
+1:1로 매핑 될 수 있습니다. 이렇게 하면 실행 가능 이미지 크기가 줄어들며, CPU에
+우호적인 더 많은 명령어 캐시가 됩니다. 특히 ``x86`` 과 같은 CISC 명령어 세트의
+경우 JITs는 주어진 명령어에 대해 가능한 가장 짧은 opcode를 변환하여 프로그램
 변환에 필요한 총 크기를 줄이기 위해 최적화됩니다.
 
 Hardening
 ---------
 
-BPF는 코드 잠재적 손상을 방지하기 위해 프로그램의 실행 동안 커널에서 읽기 전용으로 
-JIT 컴파일 된 이미지 (``struct bpf_binary_header)``뿐만 아니라 BPF 인터프리터 이미지
-(``struct bpf_prog``)를 잠급니다. 이러한 시점에서 일어난 corruption, 예를 들어, 
+BPF는 코드 잠재적 손상을 방지하기 위해 프로그램의 실행 동안 커널에서 읽기 전용으로
+JIT 컴파일 된 이미지 (``struct bpf_binary_header)`` 뿐만 아니라 BPF 인터프리터 이미지
+(``struct bpf_prog``)를 잠급니다. 이러한 시점에서 일어난 corruption, 예를 들어,
 일부 커널 버그로 인해 general protection fault가 발생하고 따라서 corruption이 자동
-으로 일어나는 것을 허용하지 않고 커널을 crash 시킵니다. 이미지 메모리를 읽기 전용으
+으로 일어나는 것을 허용하지 않고 커널을 크래시 시킵니다. 이미지 메모리를 읽기 전용으
 로 설정하는 것을 지원하는 아키텍처는 다음을 통해 결정될 수 있습니다:
 
-이미지 메모리를 읽기 전용으로 설정하는 것을 지원하는 아키텍처는 다음을 통해 
+이미지 메모리를 읽기 전용으로 설정하는 것을 지원하는 아키텍처는 다음을 통해
 결정될 수 있습니다:
 
 ::
@@ -546,29 +546,29 @@ JIT 컴파일 된 이미지 (``struct bpf_binary_header)``뿐만 아니라 BPF �
     arch/s390/Kconfig:   select ARCH_HAS_SET_MEMORY
     arch/x86/Kconfig:    select ARCH_HAS_SET_MEMORY
 
-``CONFIG_ARCH_HAS_SET_MEMORY`` 옵션은 설정 가능 하지 않으며, 보호 기능이 항상 
+``CONFIG_ARCH_HAS_SET_MEMORY`` 옵션은 설정 가능 하지 않으며, 보호 기능이 항상
 내장되어 있습니다. 다른 아키텍처들은 향후 동일 할 수 있습니다.
 
-``x86_64`` JIT 컴파일러의 경우, tail 호출을 사용하여, 간접 점프의 JiTing은 
-``CONFIG_RETPOLINE`` 이 설정 되었을 때, 가장 최신의 리눅스 배포판에서 
+``x86_64`` JIT 컴파일러의 경우, tail 호출을 사용하여, 간접 점프의 JiTing은
+``CONFIG_RETPOLINE`` 이 설정 되었을 때, 가장 최신의 리눅스 배포판에서
 retpoline 을 통해 실행됩니다.
 
-``/proc/sys/net/core/bpf_jit_harden`` 의 값이 ``1`` 로 설정된 경우 JIT 컴파일에 
-대한 추가적인 hardening 단계로 권한이 없는 사용자들에게 적용됩니다. 이것은 
+``/proc/sys/net/core/bpf_jit_harden`` 의 값이 ``1`` 로 설정된 경우 JIT 컴파일에
+대한 추가적인 hardening 단계로 권한이 없는 사용자들에게 적용됩니다. 이것은
 시스템에서 동작하는 신뢰할 수없는 사용자에 대해서 (잠재적인)공격 지점을 줄임
-으로써 성능을 실제적으로 약간 저하 됩니다. 이러한 프로그램 실행의 축소는 여전히 
+으로써 성능을 실제적으로 약간 저하 됩니다. 이러한 프로그램 실행의 축소는 여전히
 인터프리터로 전환하는 것 보다 더 나은 성능을 나타냅니다.
 
-현재 hardening 기능을 활성화 하면 원시 opcode를 직접적인 값으로 주입하는 
-JIT spraying 공격을 방지하기 위해 JIT 컴파일시 BPF 프로그램의 모든 32 비트 및 
-64 비트 상수를 제공받지 못하게됩니다. 이러한 직접적인 값은 실행 가능한 커널 
-메모리에 있기 때문에 문제가 되며, 따라서 일부 커널 버그로 인해 발생할 수있는 
+현재 hardening 기능을 활성화 하면 원시 opcode를 직접적인 값으로 주입하는
+JIT spraying 공격을 방지하기 위해 JIT 컴파일시 BPF 프로그램의 모든 32 비트 및
+64 비트 상수를 제공받지 못하게됩니다. 이러한 직접적인 값은 실행 가능한 커널
+메모리에 있기 때문에 문제가 되며, 따라서 일부 커널 버그로 인해 발생할 수있는
 점프는 직접적인 값의 시작으로 이동 한 다음 기본 명령어로 실행합니다.
 
-JIT 상수 블라인드는 실제 명령어를 무작위로 지정하여 방지 하며, 이것은 직접적인 
-기반을 둔 소스 피연산자에서 레지스터 기반을 둔 실제 피연산자로 값의 실제 로드를 
-두 단계로 나누어 명령을 다시 작성하는 방식으로 변환됩니다: 1) 블라인드 된 직접 값 
-``rnd ^ imm`` 을 레지스터에 로드 하며, 2) 본래의 ``imm`` immediatie가 레지스터에 
+JIT 상수 블라인드는 실제 명령어를 무작위로 지정하여 방지 하며, 이것은 직접적인
+기반을 둔 소스 피연산자에서 레지스터 기반을 둔 실제 피연산자로 값의 실제 로드를
+두 단계로 나누어 명령을 다시 작성하는 방식으로 변환됩니다: 1) 블라인드 된 직접 값
+``rnd ^ imm`` 을 레지스터에 로드 하며, 2) 본래의 ``imm`` immediatie가 레지스터에
 상주하고 실제 작업에 사용될 수 있도록 ``rnd`` 로 등록하는 xoring을 합니다.
 이 예제는 로드 동작을 위해 제공 되었지만, 실제로 모든 일반 동작은 블라인드입니다.
 
@@ -590,7 +590,7 @@ hardening이 비활성화 된 프로그램의 JITing 예제:
       5c:   mov    $0xa89020b0,%eax
       [...]
 
-같은 프로그램이 경우 hardening이 활성화 된 권한이 없는 사용자를 BPF를 통해 로드 
+같은 프로그램이 경우 hardening이 활성화 된 권한이 없는 사용자를 BPF를 통해 로드
 될 때 상수가 블라인드가됩니다:
 
 ::
@@ -619,25 +619,25 @@ hardening이 비활성화 된 프로그램의 JITing 예제:
       96:   mov    %r10d,%eax
       [...]
 
-두 프로그램 모두 의미 상 동일 하며, 단지 두 번째 프로그램의 디스어셈블리에서 더 이상 
+두 프로그램 모두 의미 상 동일 하며, 단지 두 번째 프로그램의 디스어셈블리에서 더 이상
 원래의 직접 값이 보이지 않습니다.
 
 동시에 hardening는 JIT 이미지 주소가 ``/proc/kallsyms`` 에 더 이상 노출되지 않도록 권한있
 는 사용자에 대한 JIT kallsyms 노출에 대해 비활성화합니다.
 
-또한 Linux 커널은 전체 BPF 인터프리터를 커널에서 제거하고 JIT 컴파일러를 영구적으로 
-활성화하는 ``CONFIG_BPF_JIT_ALWAYS_ON`` 옵션을 제공합니다. 이것은 Spectre v2의 상황에서 
-VM 기반 설정에서 사용될 때 게스트 커널이 공격이 증가 할때 호스트 커널의 BPF 인터프리터를 
+또한 Linux 커널은 전체 BPF 인터프리터를 커널에서 제거하고 JIT 컴파일러를 영구적으로
+활성화하는 ``CONFIG_BPF_JIT_ALWAYS_ON`` 옵션을 제공합니다. 이것은 Spectre v2의 상황에서
+VM 기반 설정에서 사용될 때 게스트 커널이 공격이 증가 할때 호스트 커널의 BPF 인터프리터를
 재사용하지 않기 위해 개발되었습니다. 컨테이너 기반 환경의 경우 ``CONFIG_BPF_JIT_ALWAYS_ON``
-구성 옵션은 선택 사항이지만, JIT가 활성화되어있는 경우 인터프리터는 커널의 복잡성을 줄이기 
-위해 컴파일에서 제외 될 수 있습니다. 따라서 ``x86_64`` 및 ``arm64`` 와 같은 메인 스트림 
+구성 옵션은 선택 사항이지만, JIT가 활성화되어있는 경우 인터프리터는 커널의 복잡성을 줄이기
+위해 컴파일에서 제외 될 수 있습니다. 따라서 ``x86_64`` 및 ``arm64`` 와 같은 메인 스트림
 아키텍처의 경우 널리 사용되는 JITs를 일반적으로 권장됩니다.
 
-마지막으로, 커널은 ``/proc/sys/kernel/unprivileged_bpf_disabled`` sysctl 설정를 통해 
-권한이없는 사용자에게 ``bpf(2)`` 시스템 호출을 사용하지 못하게 하는 옵션을 제공합니다. 
-일회성 kill 스위치 이며, 한번 ``1`` 로 설정이되면, 새로운 커널을 부팅 할때까지 
-다시 ``0`` 으로 재 설정하는 옵션은 없습니다. 초기 네임스페이스에서 ``CAP_SYS_ADAMIN`` 
-권한이 설정된 프로세서만 설정하면, 그 시점 이후 ``bpf(2)`` 시스템 호출을 사용 할수 
+마지막으로, 커널은 ``/proc/sys/kernel/unprivileged_bpf_disabled`` sysctl 설정를 통해
+권한이없는 사용자에게 ``bpf(2)`` 시스템 호출을 사용하지 못하게 하는 옵션을 제공합니다.
+일회성 kill 스위치 이며, 한번 ``1`` 로 설정이되면, 새로운 커널을 부팅 할때까지
+다시 ``0`` 으로 재 설정하는 옵션은 없습니다. 초기 네임스페이스에서 ``CAP_SYS_ADAMIN``
+권한이 설정된 프로세서만 설정하면, 그 시점 이후 ``bpf(2)`` 시스템 호출을 사용 할수
 있습니다. cilium은 이 설정에 대해서 ``1`` 로 설정합니다.
 
 ::
@@ -647,51 +647,52 @@ VM 기반 설정에서 사용될 때 게스트 커널이 공격이 증가 할때
 Offloads
 --------
 
-Networking programs in BPF, in particular for tc and XDP do have an
-offload-interface to hardware in the kernel in order to execute BPF
-code directly on the NIC.
+BPF의 네트워킹 프로그램, 특히 tc와 XDP의 경우 NIC에서 직접 BPF 코드를 실행하기 위해
+커널의 하드웨어에 대한 오프로드 인터페이스가 있습니다.
 
-Currently, the ``nfp`` driver from Netronome has support for offloading
-BPF through a JIT compiler which translates BPF instructions to an
-instruction set implemented against the NIC.
+현재 Netronome의 ``nfp`` 드라이버는 BPF 명령어를 NIC에 대해 구현된 명령어 세트로 변환
+하여 JIT 컴파일러를 통해 BPF를 오프로드 할 수 있도록 지원합니다. 여기에는 NIC에 대한
+BPF 맵 의오프로딩이 포함되므로  offload된 BPF 프로그램은 맵 조회, 업데이트 및 삭제를
+수행 할 수 있습니다.
 
-Toolchain
-=========
+툴체인
+======
 
-Current user space tooling, introspection facilities and kernel control knobs around
-BPF are discussed in this section. Note, the tooling and infrastructure around BPF
-is still rapidly evolving and thus may not provide a complete picture of all available
-tools.
+현재 사용자 공간에서의 도구, BPF 관련 자가 검사 방법 및 BPF 관련의 커널 설정 제어는
+이 섹션에서 논의됩니다. BPF 관련된 도구 및 구조는 여전히 빠르게 발전하고 있으므로,
+사용 가능한 모든 도구에 대한 전체 그림을 제공하지 못할 수도 있습니다.
 
-Development Environment
------------------------
 
-A step by step guide for setting up a development environment for BPF can be found
-below for both Fedora and Ubuntu. This will guide you through building, installing
-and testing a development kernel as well as building and installing iproute2.
+개발환경
+--------
 
-The step of building your own iproute2 and Linux kernel is usually not necessary
-given that major distributions already ship recent enough kernels by default, but
-would be needed for testing bleeding edge versions or contributing BPF patches to
-iproute2 and to the Linux kernel, respectively.
+Fedora와 Ubuntu 모두에서 BPF 개발 환경을 설정하는 단계별 가이드는 아래에 나와 있
+습니다. 이것은 iproute2 빌드 및 설치는 물론 개발 커널의 빌드, 설치 및 테스트를
+안내합니다.
 
-Fedora
+iproute2 및 Linux 커널을 수동으로 빌드하는 단계는 일반적으로 주요 배포판이 이미
+최신 커널을 기본적으로 제공하기 때문에 필요하지 않지만 리스크가 있는 가장 최신의
+버전을 테스트하거나 BPF 패치에 기여하는 iproute2 및 리눅스 커널에 필요합니다.
+마찬가지로, 디버깅 및 자가 검사를 위해 bpftool을 빌드하는 것은 선택 사항이지만
+권장됩니다.
+
+페도라
 ``````
 
-The following applies to Fedora 25 or later:
+페도라 25 이상의 버젼에 적용됩니다:
 
 ::
 
     $ sudo dnf install -y git gcc ncurses-devel elfutils-libelf-devel bc \
       openssl-devel libcap-devel clang llvm
 
-.. note:: If you are running some other Fedora derivative and ``dnf`` is missing,
-          try using ``yum`` instead.
+.. note:: 다른 페도라 파생 버젼을 사용하는 경우, ``dnf`` 명령어가
+          없는 경우 ``yum`` 을 사용해 보세요.
 
-Ubuntu
+우분트
 ``````
 
-The following applies to Ubuntu 17.04 or later:
+우분투 17.04 이상의 버젼에 적용 됩니다:
 
 ::
 
