@@ -1357,9 +1357,6 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 되며, 알고 있어야 할 몇 가지 저지르기 쉬운 실수가 있습니다.다음 항목에서는 BPF
 모델의 몇 가지 차이점에 대해 설명합니다:
 
-1. **Everything needs to be inlined, there are no function calls (on older
-   LLVM versions) or shared library calls available.**
-
 1. **모든 것이 인라인 될 필요가 있으며, 함수 콜 (구 LLVM 버전에서)이나 공유
    라이브러리 호출이 없습니다.**
 
@@ -1408,7 +1405,16 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
     char __license[] __section("license") = "GPL";
 
-2. **Multiple programs can reside inside a single C file in different sections.**
+2. **여러 프로그램은 서로 다른 섹션의 단일 C 파일 내에 상주 할 수 있습니다.**
+
+   BPF 용 C 프로그램은 섹션 주석을 많이 사용합니다. C 파일은 일반적으로 3 개 이상의
+   섹션으로 구성됩니다.BPF ELF 로더는 이 이름들을 사용하여 bpf 시스템 콜을 통해 프로
+   그램 과 맵을 로드하기 위해 관련 정보를 추출하고 준비합니다. 예를 들어, iproute2는
+   ``map`` 과 ``'license`` 를 기본 섹션 이름으로 사용하여 맵 작성에 필요한 메타 데이
+   터와 BPF 프로그램에 대한 라이센스를 각각 찾습니다.프로그램 생성시 마지막에 커널에
+   푸시가 되며, 프로그램이 GPL호환 라이센스를 보유한 경우에만 GPL로 노출되는 일부
+   Helper 기능 들이 활성화 되며,예를 들어 ``bpf_ktime_get_ns()``, ``bfp_probe_read()``
+   및 기타가 해당이 됩니다.
 
    C programs for BPF make heavy use of section annotations. A C file is
    typically structured into 3 or more sections. BPF ELF loaders use these
