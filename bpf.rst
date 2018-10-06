@@ -1360,25 +1360,26 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 1. **Everything needs to be inlined, there are no function calls (on older
    LLVM versions) or shared library calls available.**
 
-   Shared libraries, etc cannot be used with BPF. However, common library
-   code used in BPF programs can be placed into header files and included in
-   the main programs. For example, Cilium makes heavy use of it (see ``bpf/lib/``).
-   However, this still allows for including header files, for example, from
-   the kernel or other libraries and reuse their static inline functions or
-   macros / definitions.
+1. **모든 것이 인라인 될 필요가 있으며, 함수 콜 (구 LLVM 버전에서)이나 공유
+   라이브러리 호출이 없습니다.**
 
-   Unless a recent kernel (4.16+) and LLVM (6.0+) is used where BPF to BPF
-   function calls are supported, then LLVM needs to compile and inline the
-   entire code into a flat sequence of BPF instructions for a given program
-   section. In such case, best practice is to use an annotation like ``__inline``
-   for every library function as shown below. The use of ``always_inline``
-   is recommended, since the compiler could still decide to uninline large
-   functions that are only annotated as ``inline``.
+   공유 라이브러리 등은 BPF와 함께 사용할 수 없습니다. 그러나 BPF 프로그램에서
+   사용되는 공통 라이브러리 코드는 헤더 파일에 배치되고 주 프로그램에 포함될 수
+   있습니다. 예를 들어, Cilium은 이것을 많이 사용합니다 (``bpf/lib/`` 참조).
+   그러나 이것은 여전히 헤더 파일을 포함 할 수 있으며, 예를 들어 커널이나
+   다른 라이브러리에서 가져 와서 정적 인라인 함수 나 매크로 / 정의를 재사용
+   할 수 있습니다.
 
-   In case the latter happens, LLVM will generate a relocation entry into
-   the ELF file, which BPF ELF loaders such as iproute2 cannot resolve and
-   will thus produce an error since only BPF maps are valid relocation entries
-   which loaders can process.
+   BPF에서 BPF 함수 호출이 지원되는 최신 커널 (4.16+)과 LLVM (6.0+)이 사용하지
+   않는 경우에 LLVM은 전체 코드를 컴파일하고 주어진 프로그램 섹션에 대한 BPF
+   명령어의 flat sequence로 인라인 해야합니다. 이 경우 아래에 표시된 것처럼
+   모든 라이브러리 함수에 대해 ``__inline`` 과 같은 주석을 사용하는 것이 가장
+   좋습니다. ``always_inline`` 을 사용하는 것이 추천하며, 컴파일러는 여전히
+   ``inline`` 으로 주석 처리 된 큰 함수의 uninline 할 수 있기 때문입니다.
+
+   후자가 발생하면 LLVM은 ELF 파일로 재배치 엔트리를 생성하며, 이 엔트리는
+   iproute2와 같은 BPF ELF 로더가 해석 할 수 없으며, 따라서 BPF 맵만이 로더가
+   처리 할 수있는 유효한 재배치 엔트리이기 때문에 오류가 발생합니다.
 
    ::
 
