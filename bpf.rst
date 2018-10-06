@@ -1,8 +1,14 @@
+.. only:: not (epub or latex or html)
+
+    경고 : 출시되지 않은 Cilium 설명서를보고 있습니다.
+    공식 릴리스 버전을 사용하십시오.
+    http://docs.cilium.io
+
 .. _bpf_guide:
 
-***************************
+**********************
 BPF 와 XDP 참조 가이드
-***************************
+**********************
 
 .. note:: 이 문서 과정은 기술적인 면에서 BPF와 XDP를 이해하고자 하는 개발자와
           사용자를 대상으로 만들어졌습니다. 현재의 참조안내서를 읽는 동안
@@ -35,7 +41,7 @@ Cilium에서 BPF 템플릿을 개발하는데 도움이되는 BPF 참조 가이�
 입니다.
 
 BPF 구조
-================
+========
 
 BPF는 명령 세트만 제공함에 있어서 다른 정의하지 않지만, 효율적인 키/값 저장소
 역할을 하는 map이 있으며, 커널 기능과 상호 작용하고 활용하는 도와주는 함수인
@@ -63,7 +69,7 @@ XDP BPF 프로그램은 초기 네트워킹 드라이버 단계에 연결되어 
 설명합니다.
 
 명령어 집합
----------------
+-----------
 
 BPF는 범용 RISC 명령어 집합이며 compiler 하위 단계에서 (예를 들어 LLVM)를 통해
 BPF 명령어로 컴파일 가능한 C언어로 프로그램을 작성하기 위해 설계 되었으며,
@@ -247,7 +253,7 @@ cBPF 프로그램도 커널에서 투명하게 eBPF 프로그램으로 변환됩
 프로그램뿐만 아니라 고정 된 맵을 BPF 파일 시스템에 고정시키는 데에도 사용됩니다.
 
 Helper 함수
-----------------
+-----------
 
 Helper 함수는 BPF 프로그램이 코어 커널에 정의된 함수 콜 참조하여 커널에서 데이터를
 검색 / 푸시 할수있게 해주는 개념입니다. 사용 가능한 Helper 기능은 각 BPF 프로그램
@@ -309,6 +315,13 @@ verifier에게 넘겨주기 위해 사용되며, 따라서 verifier는 helper가
 다양합니다. 후자의 경우, verifier는 예를 들어 버퍼가 이전에 초기화되었는지
 여부와 같은 추가 검사를 수행 할 수도 있습니다.
 
+The list of available BPF helper functions is rather long and constantly growing,
+for example, at the time of this writing, tc BPF programs can choose from 38
+different BPF helpers. The kernel's ``struct bpf_verifier_ops`` contains a
+``get_func_proto`` callback function that provides the mapping of a specific
+``enum bpf_func_id`` to one of the available helpers for a given BPF program
+type.
+
 Maps
 ----
 
@@ -341,7 +354,7 @@ map 구현은 코어 커널에 의해 제공됩니다. 마음대로 데이터를
 문제를 해결 합니다.
 
 객체 고정
---------------
+---------
 
 BPF 맵과 프로그램은 커널 리소스 역할을 하며 커널의 익명 inode가 지원하는 파일
 디스크립터를 통해서만 액세스 할 수 있으며, 장점 인것 뿐만 아니라 여러 가지
@@ -387,14 +400,16 @@ tc 프로그램의 경우 ``cb[]`` 영역과 같은 ``skb`` 필드를 사용해�
 파일 디스크립터 이며, 두 번째 요소는 컨텍스트 다시 말해 프로그램 배열에 대한 참조
 및 조회 키가 전달되는 ``bpf_tail_call()`` helper입니다. 그런 다음 커널은 이 helper
 콜을 특수화 된 BPF 명령어로 직접 인라인 합니다. 이러한 프로그램 배열은 현재 사용자
-공간 측면에서 쓰기 전용입니다
+공간 측면에서 쓰기 전용입니다.
 
 커널은 전달 된 파일 디스크립터에서 관련 BPF 프로그램을 찾고 지정된 map 슬롯에서
 프로그램 포인터를 원자적으로 대체합니다. 제공된 키에서 map 항목을 찾지 못한다면,
 커널은 "fall-through" 및 ``bpf_taill_call()`` 다음에 오는 명령으로 이전 프로그램의
 실행을 계속합니다. taill 호출은 강력한 유틸리티 이며, 예를 들어 파싱 네트워크 헤더는
 taill 콜을 통해 구조화 될 수 있습니다. 런타임 중에는 기능을 원자적으로 추가하거나
-대체 할 수 있으므로 BPF 프로그램의 실행 동작이 변경됩니다
+대체 할 수 있으므로 BPF 프로그램의 실행 동작이 변경됩니다.
+
+.. _bpf_to_bpf_calls:
 
 BPF 호출에서 BPF 호출
 ---------------------
@@ -493,11 +508,6 @@ JIT
 ::
 
     # echo 1 > /proc/sys/net/core/bpf_jit_enable
-
-The 32 bit ``mips``, ``ppc`` and ``sparc`` architectures currently have a cBPF
-JIT compiler. The mentioned architectures still having a cBPF JIT as well as all
-remaining architectures supported by the Linux kernel which do not have a BPF JIT
-compiler at all need to run eBPF programs through the in-kernel interpreter.
 
 32 비트 ``mips``, ``ppc`` 및 ``sparc`` 아키텍처에는 현재 cBPF JIT 컴파일러
 가 있습니다. cBPF JIT와 BPF JIT 컴파일러가 없는 Linux 커널이 지원하는
@@ -699,32 +709,32 @@ iproute2 및 Linux 커널을 수동으로 빌드하는 단계는 일반적으로
     $ sudo apt-get install -y make gcc libssl-dev bc libelf-dev libcap-dev \
       clang gcc-multilib llvm libncurses5-dev git pkg-config libmnl bison flex
 
-Compiling the Kernel
-````````````````````
+커널 컴파일
+```````````
 
-Development of new BPF features for the Linux kernel happens inside the ``net-next``
-git tree, latest BPF fixes in the ``net`` tree. The following command will obtain
-the kernel source for the ``net-next`` tree through git:
+리눅스 커널을 위한 새로운 BPF 기능의 개발은 ``net-next`` git 트리 안에서 이루어지며,
+최신 BPF는 ``net`` 트리에서 fix됩니다.다음 명령은 git을 통해 ``net-next`` 트리의 커널
+소스를 얻습니다:
 
 ::
 
     $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next.git
 
-If the git commit history is not of interest, then ``--depth 1`` will clone the
-tree much faster by truncating the git history only to the most recent commit.
+자식 커밋 기록에 대해 관심이 없다면 ``--depth 1`` 은 자식 커밋 기록을 가장 최근
+의 커밋으로 제외함으로써 훨씬 빠르게 트리를 복제합니다.
 
-In case the ``net`` tree is of interest, it can be cloned from this url:
+``net`` 트리에 관심이 있는 경우에는 다음 URL에서 복제 할수 있습니다:
 
 ::
 
     $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git
 
-There are dozens of tutorials in the Internet on how to build Linux kernels, one
-good resource is the Kernel Newbies website (https://kernelnewbies.org/KernelBuild)
-that can be followed with one of the two git trees mentioned above.
+인터넷에 리눅스 커널을 만드는 방법에 대한 수십 가지 튜토리얼이 있으며, 하나의
+좋은 자료는 Kernel Newbies 웹 사이트 (https://kernelnewbies.org/KernelBuild)
+이며, 위에서 언급 한 두 가지 자식 트리 중 하나를 따라 리눅스 커널을 구성 합니다.
 
-Make sure that the generated ``.config`` file contains the following ``CONFIG_*``
-entries for running BPF. These entries are also needed for Cilium.
+생성 된 ``.config`` 파일에 BPF를 실행하기 위한 다음 ``CONFIG_ *`` 항목이 포함
+되어 있는지 확인하십시오. 이 항목은 Cilium 구성 하는 것에 있어서 필요합니다.
 
 ::
 
@@ -740,19 +750,17 @@ entries for running BPF. These entries are also needed for Cilium.
     CONFIG_BPF_EVENTS=y
     CONFIG_TEST_BPF=m
 
-Some of the entries cannot be adjusted through ``make menuconfig``. For example,
-``CONFIG_HAVE_EBPF_JIT`` is selected automatically if a given architecture does
-come with an eBPF JIT. In this specific case, ``CONFIG_HAVE_EBPF_JIT`` is optional
-but highly recommended. An architecture not having an eBPF JIT compiler will need
-to fall back to the in-kernel interpreter with the cost of being less efficient
-executing BPF instructions.
+일부 항목은 ``make menuconfig`` 를 통해 조정할 수 없습니다. 예를 들어
+``CONFIG_HAVE_EBPF_JIT`` 는 지정된 아키텍처에 eBPF JIT가 있는 경우
+자동으로 선택됩니다. 이 경우 ``CONFIG_HAVE_EBPF_JIT`` 는 선택 사항이지만
+적극 권장됩니다. eBPF JIT 컴파일러가 없는 아키텍처는 커널 내 인터프리터
+로 대체하여 BPF 명령어를 실행되며 효율적이지 않습니다.
 
-Verifying the Setup
-```````````````````
-
-After you have booted into the newly compiled kernel, navigate to the BPF selftest
-suite in order to test BPF functionality (current working directory points to
-the root of the cloned git tree):
+설정확인
+````````
+새로 컴파일 된 커널로 부팅 한 후, BPF 기능을 테스트하기 위해 BPF 자가
+테스트 그룹으로 이동합니다 (현재 작업 디렉토리가 복제 된 git 트리의
+루트를 가리킵니다).
 
 ::
 
@@ -760,46 +768,52 @@ the root of the cloned git tree):
     $ make
     $ sudo ./test_verifier
 
-The verifier tests print out all the current checks being performed. The summary
-at the end of running all tests will dump information of test successes and
-failures:
+verifier 프로그램 테스트는 수행중인 모든 현재 검사를 출력합니다.
+모든 테스트를 실행 후 마지막에에 요약에 대해서 테스트 성공 및
+실패 정보를 덤프합니다:
 
 ::
 
-    Summary: 418 PASSED, 0 FAILED
+    Summary: 847 PASSED, 0 SKIPPED, 0 FAILED
 
-In order to run through all BPF selftests, the following command is needed:
+.. note:: 커널 릴리즈 4.16 이상 버젼에서 BPF 셀프 테스트는 더 이상 인라인 될 필요가
+          없는 BPF 함수 호출로 인해 LLVM 6.0 이상 버젼에 의존됩니다.자세한 정보는
+          :ref:`bpf_to_bpf_calls` 에 대한 항목을 참조하거나 커널 패치 (
+          https://lwn.net/Articles/741773/) 에서 커버 레터 메일을 참조하십시오.
+          이 새로운 기능을 사용하지 않으면 모든 BPF 프로그램이 LLVM 6.0 이상에
+          의존적이지 않습니다. 배포판에서 LLVM 6.0 이상을 제공하지 않으면 :ref:`tooling_llvm`
+          섹션의 지침에 따라 컴파일 할 수 있습니다.
+
+모든 BPF 셀프 테스트를 실행하려면 다음 명령이 필요합니다:
 
 ::
 
     $ sudo make run_tests
 
-If you see any failures, please contact us on Slack with the full test output.
+오류가 발생하면 전체 테스트 결과물과 함께 Slack을 활용 하여 문의하십시오.
 
-Compiling iproute2
-``````````````````
+iproute2 컴파일
+```````````````
 
-Similar to the ``net`` (fixes only) and ``net-next`` (new features) kernel trees,
-the iproute2 git tree has two branches, namely ``master`` and ``net-next``. The
-``master`` branch is based on the ``net`` tree and the ``net-next`` branch is
-based against the ``net-next`` kernel tree. This is necessary, so that changes
-in header files can be synchronized in the iproute2 tree.
+``net`` (fixes 전용)과 ``net-next`` (새로운 기능) 커널 트리와 비슷하게 iproute2 git
+트리에는 ``master`` 와 ``net-next`` 라는 두 가지 분기가 있습니다. 마스터 분기는
+``net`` 트리를 기반으로 하며 ``net-next`` 분기는 ``net-next`` 커널 트리를 기반으
+로 합니다. 헤더 파일의 변경 사항을 iproute2 트리에서 동기화 할 수 있도록 하려면 현재
+작업이 필요합니다.
 
-In order to clone the iproute2 ``master`` branch, the following command can
-be used:
+iproute2 ``master`` 분기를 복제 하려면 다음 명령을 사용할 수 있습니다:
 
 ::
 
     $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-Similarly, to clone into mentioned ``net-next`` branch of iproute2, run the
-following:
+마찬가지로 iproute2의 언급 된 net-next 분기에 복제 하려면 다음을 실행하십시오:
 
 ::
 
     $ git clone -b net-next git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-After that, proceed with the build and installation:
+그런 다음 빌드 및 설치를 진행하십시오:
 
 ::
 
@@ -822,30 +836,72 @@ After that, proceed with the build and installation:
     [...]
     $ sudo make install
 
-Ensure that the ``configure`` script shows ``ELF support: yes``, so that iproute2
-can process ELF files from LLVM's BPF back end. libelf was listed in the instructions
-for installing the dependencies in case of Fedora and Ubuntu earlier.
+iproute2가 LLVM의 BPF 백엔드에서 ELF 파일을 처리 할 수 있도록 ``configure`` 스크립트에
+``ELF support : yes`` 가 표시거 되는지 확인하십시오. libelf는 이전에 Fedora와 Ubuntu의
+경우 의존성 설치 지침에 나열되었습니다.
+
+bpftool 컴파일
+``````````````
+
+bpftool은 BPF 프로그램 및 맵의 디버깅 및 내부 검사에 필수적인 도구입니다. 커널 트리의
+일부이며 ``tools/bpf/bpftool/`` 아래에 위치해 있습니다
+
+앞에서 설명한 것처럼 ``net`` 또는 ``net-next`` 커널 트리를 복제하였는지 확인하십시오.
+bpftool을 빌드하고 설치하려면 다음 단계가 필요합니다:
+
+::
+
+    $ cd <kernel-tree>/tools/bpf/bpftool/
+    $ make
+    Auto-detecting system features:
+    ...                        libbfd: [ on  ]
+    ...        disassembler-four-args: [ OFF ]
+
+      CC       xlated_dumper.o
+      CC       prog.o
+      CC       common.o
+      CC       cgroup.o
+      CC       main.o
+      CC       json_writer.o
+      CC       cfg.o
+      CC       map.o
+      CC       jit_disasm.o
+      CC       disasm.o
+    make[1]: Entering directory '/home/foo/trees/net/tools/lib/bpf'
+
+    Auto-detecting system features:
+    ...                        libelf: [ on  ]
+    ...                           bpf: [ on  ]
+
+      CC       libbpf.o
+      CC       bpf.o
+      CC       nlattr.o
+      LD       libbpf-in.o
+      LINK     libbpf.a
+    make[1]: Leaving directory '/home/foo/trees/bpf/tools/lib/bpf'
+      LINK     bpftool
+    $ sudo make install
+
+.. _tooling_llvm:
 
 LLVM
 ----
 
-LLVM is currently the only compiler suite providing a BPF back end. gcc does
-not support BPF at this point.
+LLVM은 현재 BPF 백엔드를 제공하는 유일한 컴파일러 모음입니다. 현재 gcc 버젼은
+BPF를 지원하지 않습니다.
 
-The BPF back end was merged into LLVM's 3.7 release. Major distributions enable
-the BPF back end by default when they package LLVM, therefore installing clang
-and llvm is sufficient on most recent distributions to start compiling C
-into BPF object files.
+BPF 백엔드는 LLVM의 3.7 릴리즈로 병합되었습니다. 주요 배포판은 LLVM을 패키징
+할 때 기본적으로 BPF 백엔드를 사용 가능하게하므로 가장 최근의 배포판에서
+clang 및 llvm을 설치하면 C를 BPF 오브젝트 파일로 컴파일 하기에 충분합니다.
 
-The typical workflow is that BPF programs are written in C, compiled by LLVM
-into object / ELF files, which are parsed by user space BPF ELF loaders (such as
-iproute2 or others), and pushed into the kernel through the BPF system call.
-The kernel verifies the BPF instructions and JITs them, returning a new file
-descriptor for the program, which then can be attached to a subsystem (e.g.
-networking). If supported, the subsystem could then further offload the BPF
-program to hardware (e.g. NIC).
+일반적인 워크 플로우는 BPF 프로그램이 C로 작성되고 LLVM에 의해 object/ELF
+파일로 컴파일되며 사용자 공간 BPF ELF 로더(예 : iproute2 또는 기타)로 구문
+분석되고 커널 BPF 시스템 호출을 통해 커널에 푸시됩니다. 커널은 BPF 명령어
+와 JIT를 검증하고, 프로그램을 위한 새로운 파일 디스크립터를 리턴하고, 서브
+시스템 (예 : 네트워킹)에 소속 할 수 있습니다. 만약 지원된다면, 서브 시스템
+은 BPF 프로그램을 하드웨어 (예컨대, NIC)로 더 오프로드 할 수 있습니다.
 
-For LLVM, BPF target support can be checked, for example, through the following:
+LLVM의 경우 BPF 대상 지원은 다음을 통해 확인할 수 있습니다:
 
 ::
 
@@ -863,26 +919,23 @@ For LLVM, BPF target support can be checked, for example, through the following:
       bpfel      - BPF (little endian)
       [...]
 
-By default, the ``bpf`` target uses the endianness of the CPU it compiles on,
-meaning that if the CPU's endianness is little endian, the program is represented
-in little endian format as well, and if the CPU's endianness is big endian,
-the program is represented in big endian. This also matches the runtime behavior
-of BPF, which is generic and uses the CPU's endianness it runs on in order
-to not disadvantage architectures in any of the format.
+기본적으로 ``bpf`` 대상은 컴파일되는 CPU의 엔디안을 사용하며, 즉, CPU의 엔디
+안이 리틀 엔디안인 경우 프로그램은 리틀 엔디안 형식으로 표시되며 CPU의 엔
+디안이 빅 엔디안 인 경우 프로그램 빅 엔디안 형식으로 표현됩니다. 이것은 BPF의
+런타임 동작과도 일치 하며, BPF는 일반적인 형식이며, 어떤 형식의 아키텍처에도
+불리하지 않도록하기 위해 실행되는 CPU의 엔디안을 사용합니다.
 
-For cross-compilation, the two targets ``bpfeb`` and ``bpfel`` were introduced,
-thanks to that BPF programs can be compiled on a node running in one endianness
-(e.g. little endian on x86) and run on a node in another endianness format (e.g.
-big endian on arm). Note that the front end (clang) needs to run in the target
-endianness as well.
+크로스 컴파일의 경우, 두개의 타겟 ``bpfeb`` 와 ``bpfel`` 이 도입 덕분에, BPF
+프로그램은 x86에서의 리틀 엔디안에서 실행되는 노드에서 컴파일 할수 있으며,
+arm에서의 빅 엔디안 형식의 노드에서 실행 할 수 있습니다. 프런트 엔드(clang)는
+타겟 엔디안에서도 실행 해야 합니다.
 
-Using ``bpf`` as a target is the preferred way in situations where no mixture of
-endianness applies. For example, compilation on ``x86_64`` results in the same
-output for the targets ``bpf`` and ``bpfel`` due to being little endian, therefore
-scripts triggering a compilation also do not have to be endian aware.
+대상으로 ``bpf`` 사용하는 것은 엔디안이 혼재되지 않는 상황에서 선호 되는 방법
+입니다. 예를 들어, ``x86_64`` 에서의 컴파일은 little 엔디안이기 때문에 타겟 ``bpf``
+및 ``bpfel`` 에 대해 동일한 결과물 로써, 컴파일을 트리거하는 스크립트에서는 엔디안
+을 인식 할 필요가 없습니다.
 
-A minimal, stand-alone XDP drop program might look like the following example
-(``xdp-example.c``):
+최소한의 독립실행형 XDP drop 프로그램은 다음 예제 (``xdp-example.c``)와 같습니다:
 
 ::
 
@@ -901,32 +954,30 @@ A minimal, stand-alone XDP drop program might look like the following example
 
     char __license[] __section("license") = "GPL";
 
-It can then be compiled and loaded into the kernel as follows:
+그런 다음 다음과 같이 컴파일하고 커널에 로드 할 수 있습니다:
 
 ::
 
     $ clang -O2 -Wall -target bpf -c xdp-example.c -o xdp-example.o
     # ip link set dev em1 xdp obj xdp-example.o
 
-.. note:: Attaching an XDP BPF program to a network device as above requires
-          Linux 4.11 with a device that supports XDP, or Linux 4.12 or later.
+.. note:: 위와 같이 네트워크 장치에 XDP BPF 프로그램을 연결하려면 XDP를 지원
+          하는 장치가있는 Linux 4.11 혹은 Linux 4.12 이 요구됩니다.
 
-For the generated object file LLVM (>= 3.9) uses the official BPF machine value,
-that is, ``EM_BPF`` (decimal: ``247`` / hex: ``0xf7``). In this example, the program
-has been compiled with ``bpf`` target under ``x86_64``, therefore ``LSB`` (as opposed
-to ``MSB``) is shown regarding endianness:
+생성 된 오브젝트 파일의 경우 LLVM (> = 3.9)은 공식적인 BPF 시스템 값, 즉 ``EM_BPF``
+(10진수:``247`` / 16진수:``0xf7``)를 사용합니다. 이 예제에서 프로그램은 ``x86_64``
+에서 ``bpf`` 대상으로 컴파일 되었으므로 ``LSB`` (``MSB`` 와 반대)가 endian와 관련
+하여 표시됩니다:
 
 ::
 
     $ file xdp-example.o
     xdp-example.o: ELF 64-bit LSB relocatable, *unknown arch 0xf7* version 1 (SYSV), not stripped
 
-``readelf -a xdp-example.o`` will dump further information about the ELF file, which can
-sometimes be useful for introspecting generated section headers, relocation entries
-and the symbol table.
+``readelf -a xdp-example.o`` 은 ELF 파일에 대한 추가 정보를 덤프 하며, 생성 된
+섹션 헤더, 재배치 항목 및 심볼 테이블을 자가검사 할 때 유용 할 수 있습니다.
 
-In the unlikely case where clang and LLVM need to be compiled from scratch, the
-following commands can be used:
+Clang 및 LLVM을 처음부터 컴파일 해야하는 경우에는 다음 명령을 사용할 수 있습니다:
 
 ::
 
@@ -953,11 +1004,11 @@ following commands can be used:
 
     $ export PATH=$PWD/bin:$PATH   # add to ~/.bashrc
 
-Make sure that ``--version`` mentions ``Optimized build.``, otherwise the
-compilation time for programs when having LLVM in debugging mode will
-significantly increase (e.g. by 10x or more).
+``--version`` 정보에 ``Optimized build`` 가 포함되어 있는지 확인해야 하며,
+그렇지 않으면 디버깅 방식에서 LLVM을 사용하는 프로그램의 컴파일 시간이 크게
+늘어납니다 (예:10 배 이상).
 
-For debugging, clang can generate the assembler output as follows:
+디버깅을 위해 clang에서는 다음과 같이 어셈블러 출력을 생성 할 수 있습니다:
 
 ::
 
@@ -977,9 +1028,19 @@ For debugging, clang can generate the assembler output as follows:
     __license:
         .asciz    "GPL"
 
-Furthermore, more recent LLVM versions (>= 4.0) can also store debugging
-information in dwarf format into the object file. This can be done through
-the usual workflow by adding ``-g`` for compilation.
+Starting from LLVM's release 6.0, there is also assembler parser support. You can
+program using BPF assembler directly, then use llvm-mc to assemble it into an
+object file. For example, you can assemble the xdp-example.S listed above back
+into object file using:
+
+::
+
+    $ llvm-mc -triple bpf -filetype=obj -o xdp-example.o xdp-example.S
+
+
+또한 최신 LLVM 버전 (>= 4.0)은 디버그 정보를 dwarf 형식으로 객체 파일에 저장
+할 수 있습니다. 이것은 컴파일 ``-g`` 파라메터를 추가하여 일반적인 워크플로우를
+통해 수행 할 수 있습니다.
 
 ::
 
@@ -995,14 +1056,12 @@ the usual workflow by adding ``-g`` for compilation.
     ; return XDP_DROP;
         1:        exit
 
-The ``llvm-objdump`` tool can then annotate the assembler output with the
-original C code used in the compilation. The trivial example in this case
-does not contain much C code, however, the line numbers shown as ``0:``
-and ``1:`` correspond directly to the kernel's verifier log.
+``llvm-objdump`` 도구는 컴파일러에서 사용 된 원본 C 코드로 어셈블러 출력에 주석을
+추가 할 수 있습니다. 이 경우 간단한 예제는 C 코드를 많이 포함하지 않지만 ``0:``
+및 ``1:`` 로 표시된 줄 번호는 커널의 verifier 로그에 직접적으로 이어 집니다.
 
-This means that in case BPF programs get rejected by the verifier, ``llvm-objdump``
-can help to correlate the instructions back to the original C code, which is
-highly useful for analysis.
+즉, BPF 프로그램이 verifier에 의해 거부되는 경우 ``llvm-objdump`` 는 명령을 원래의
+C코드와 연관시키는 데 도움을 줄 수 있으며 이는 분석하는데 있어서 매우 유용합니다.
 
 ::
 
@@ -1019,11 +1078,11 @@ highly useful for analysis.
     1: (95) exit
     processed 2 insns
 
-As it can be seen in the verifier analysis, the ``llvm-objdump`` output dumps
-the same BPF assembler code as the kernel.
+verifier 분석에서 볼 수 있듯이, llvm-objdump 출력 값은 커널과 동일한 BPF
+어셈블러 코드를 덤프 합니다.
 
-Leaving out the ``-no-show-raw-insn`` option will also dump the raw
-``struct bpf_insn`` as hex in front of the assembly:
+``-no-show-raw-insn`` 옵션을 제외하면 ``raw struct bpf_insn`` 을 어셈블리
+앞에 hex(16진수)로 덤프 합니다:
 
 ::
 
@@ -1038,34 +1097,268 @@ Leaving out the ``-no-show-raw-insn`` option will also dump the raw
     ; return foo();
        1:       95 00 00 00 00 00 00 00     exit
 
-For LLVM IR debugging, the compilation process for BPF can be split into
-two steps, generating a binary LLVM IR intermediate file ``xdp-example.bc``, which
-can later on be passed to llc:
+LLVM IR(중간 표현) 디버깅인 경우, BPF 컴파일 프로세스를 두 단계로 나뉠 수
+있으며, 나중에 llc에 전달 될수 있는 바이너리 LLVM IR(중간 표현) 중간 파일
+인 ``xdp-example.bc`` 생성 합니다.
 
 ::
 
     $ clang -O2 -Wall -emit-llvm -c xdp-example.c -o xdp-example.bc
     $ llc xdp-example.bc -march=bpf -filetype=obj -o xdp-example.o
 
-The generated LLVM IR can also be dumped in human readable format through:
+생성 된 LLVM IR(중간 표현)은 또한 다음을 통해 사람이 읽을 수있는 형식으로
+덤프 될 수 있습니다:
 
 ::
 
     $ clang -O2 -Wall -emit-llvm -S -c xdp-example.c -o -
 
-Note that LLVM's BPF back end currently does not support generating code
-that makes use of BPF's 32 bit subregisters. Inline assembly for BPF is
-currently unsupported, too.
+LLVM is able to attach debug information such as the description of used data
+types in the program to the generated BPF object file. By default this is in
+DWARF format.
 
-Furthermore, compilation from BPF assembly (e.g. ``llvm-mc xdp-example.S -arch bpf -filetype=obj -o xdp-example.o``)
-is currently not supported either due to missing BPF assembly parser.
+A heavily simplified version used by BPF is called BTF (BPF Type Format). The
+resulting DWARF can be converted into BTF and is later on loaded into the
+kernel through BPF object loaders. The kernel will then verify the BTF data
+for correctness and keeps track of the data types the BTF data is containing.
 
-When writing C programs for BPF, there are a couple of pitfalls to be aware
-of, compared to usual application development with C. The following items
-describe some of the differences for the BPF model:
+BPF maps can then be annotated with key and value types out of the BTF data
+such that a later dump of the map exports the map data along with the related
+type information. This allows for better introspection, debugging and value
+pretty printing. Note that BTF data is a generic debugging data format and
+as such any DWARF to BTF converted data can be loaded (e.g. kernel's vmlinux
+DWARF data could be converted to BTF and loaded). Latter is in particular
+useful for BPF tracing in the future.
 
-1. **Everything needs to be inlined, there are no function or shared library
-   calls available.**
+In order to generate BTF from DWARF debugging information, elfutils (>= 0.173)
+is needed. If that is not available, then adding the ``-mattr=dwarfris`` option
+to the ``llc`` command is required during compilation:
+
+::
+
+    $ llc -march=bpf -mattr=help |& grep dwarfris
+      dwarfris - Disable MCAsmInfo DwarfUsesRelocationsAcrossSections.
+      [...]
+
+The reason using ``-mattr=dwarfris`` is because the flag ``dwarfris`` (``dwarf
+relocation in section``) disables DWARF cross-section relocations between DWARF
+and the ELF's symbol table since libdw does not have proper BPF relocation
+support, and therefore tools like ``pahole`` would otherwise not be able to
+properly dump structures from the object.
+
+elfutils (>= 0.173) implements proper BPF relocation support and therefore
+the same can be achieved without the ``-mattr=dwarfris`` option. Dumping
+the structures from the object file could be done from either DWARF or BTF
+information. ``pahole`` uses the LLVM emitted DWARF information at this
+point, however, future ``pahole`` versions could rely on BTF if available.
+
+For converting DWARF into BTF, a recent pahole version (>= 1.12) is required.
+A recent pahole version can also be obtained from its official git repository
+if not available from one of the distribution packages:
+
+::
+
+    $ git clone https://git.kernel.org/pub/scm/devel/pahole/pahole.git
+
+``pahole`` comes with the option ``-J`` to convert DWARF into BTF from an
+object file. ``pahole`` can be probed for BTF support as follows (note that
+the ``llvm-objcopy`` tool is required for ``pahole`` as well, so check its
+presence, too):
+
+::
+
+    $ pahole --help | grep BTF
+    -J, --btf_encode           Encode as BTF
+
+Generating debugging information also requires the front end to generate
+source level debug information by passing ``-g`` to the ``clang`` command
+line. Note that ``-g`` is needed independently of whether ``llc``'s
+``dwarfris`` option is used. Full example for generating the object file:
+
+::
+
+    $ clang -O2 -g -Wall -target bpf -emit-llvm -c xdp-example.c -o xdp-example.bc
+    $ llc xdp-example.bc -march=bpf -mattr=dwarfris -filetype=obj -o xdp-example.o
+
+Alternatively, by using clang only to build a BPF program with debugging
+information (again, the dwarfris flag can be omitted when having proper
+elfutils version):
+
+::
+
+    $ clang -target bpf -O2 -g -c -Xclang -target-feature -Xclang +dwarfris -c xdp-example.c -o xdp-example.o
+
+After successful compilation ``pahole`` can be used to properly dump structures
+of the BPF program based on the DWARF information:
+
+::
+
+    $ pahole xdp-example.o
+    struct xdp_md {
+            __u32                      data;                 /*     0     4 */
+            __u32                      data_end;             /*     4     4 */
+            __u32                      data_meta;            /*     8     4 */
+
+            /* size: 12, cachelines: 1, members: 3 */
+            /* last cacheline: 12 bytes */
+    };
+
+Through the option ``-J`` ``pahole`` can eventually generate the BTF from
+DWARF. In the object file DWARF data will still be retained alongside the
+newly added BTF data. Full ``clang`` and ``pahole`` example combined:
+
+::
+
+    $ clang -target bpf -O2 -Wall -g -c -Xclang -target-feature -Xclang +dwarfris -c xdp-example.c -o xdp-example.o
+    $ pahole -J xdp-example.o
+
+The presence of a ``.BTF`` section can be seen through ``readelf`` tool:
+
+::
+
+    $ readelf -a xdp-example.o
+    [...]
+      [18] .BTF              PROGBITS         0000000000000000  00000671
+    [...]
+
+BPF loaders such as iproute2 will detect and load the BTF section, so that
+BPF maps can be annotated with type information.
+
+LVM은 기본적으로 코드를 생성하기 위해 BPF 기본 명령어 세트를 사용하여 생성
+된 오브젝트 파일이 long-term stable kernel(예 : 4.9 이상)과 같은 이전의
+커널로 로드 될 수 있는지 확인합니다.
+
+그러나 LLVM에는 BPF 명령어 세트의 다른 버전을 선택하기 위해 BPF 백엔드에
+대한 ``-mcpu`` 선택 옵션이 있어서, 보다 효율적이고 작은 코드를 생성하기 위해
+BPF 기본 명령어 세트의 맨 위에 있는 명령어 세트 확장을 사용합니다.
+
+사용 가능한 -mcpu 옵션은 다음을 통해 쿼리 할 수 있습니다:
+
+::
+
+    $ llc -march bpf -mcpu=help
+    Available CPUs for this target:
+
+      generic - Select the generic processor.
+      probe   - Select the probe processor.
+      v1      - Select the v1 processor.
+      v2      - Select the v2 processor.
+    [...]
+
+``geneirc`` 프로세서는 기본 프로세서이며 BPF의 기본 명령어 세트 v1 입니다.
+옵션 ``v1`` 과 ``v2`` 는 일반적으로 BPF 프로그램이 크로스 컴파일 되는 환경에서
+유용하며, 프로그램이 로드 되는 대상 호스트와 컴파일 된 대상 호스트가 다릅니다
+(따라서 사용 가능한 BPF 커널 기능도 다를 수 있습니다.).
+
+Cilium에서 내부적으로 사용하는 ``-mcpu`` 권장 옵션은 ``-mcpu=probe`` 입니다!
+여기서 LLVM BPF 백엔드는 BPF 명령어 세트 확장의 가용성을 커널에 쿼리하며,
+커널에서 사용 가능한 것으로 확인되면 LLVM은 필요할 때마다 BPF 프로그램을
+컴파일 하기 위해 옵션을 사용합니다.
+
+llc의 ``-mcpu = probe`` 를 사용한 전체 명령 행 예제:
+
+::
+
+    $ clang -O2 -Wall -target bpf -emit-llvm -c xdp-example.c -o xdp-example.bc
+    $ llc xdp-example.bc -march=bpf -mcpu=probe -filetype=obj -o xdp-example.o
+
+일반적으로 LLVM IR 생성은 아키텍처 독립적입니다.
+그러나 ``clang -target bpf`` 를 ``-target bpf`` 를 제외하고 사용하면
+몇 가지 차이점이 있으며, 기본 아키텍처에 따라 ``x86_64``, ``arm64``
+또는 기타 등의 clang의 기본 대상을 사용할 수 있습니다.
+
+커널의 ``Documentation/bpf/bpf_devel_QA.txt`` 에서 인용:
+
+* BPF 프로그램은 파일 범위 인라인 어셈블리 코드가 있는 헤더 파일을 재귀적으로
+  포함 할 수 있습니다. 기본 타켓은 잘 처리 할 수 있지만, bpf 백엔드 어셈블러
+  가 이러한 어셈블리 코드를 이해하지 못하면 대부분의 경우에 bpf 대상이 실패
+  할 수 있습니다.
+
+* -g 옵션 없이 컴파일하면 예를 들어 ``.eh_frame`` 및 ``.rela.eh_frame`` 과 같은
+  추가 elf 섹션이 기본 대상을 가지는 오프젝트 파일에 존재 할 수 있으며, bpf 대상
+  과는 다릅니다.
+
+* 기본 타겟은 C언어 switch 문을 switch table lookup 및 Jump 동작으로 변환 할 수
+  있습니다. switch table이 전역 읽기 전용 섹션에 있으므로 bpf 프로그램이 로드
+  되지 않습니다. bpf 대상은 switch table 최적화를 지원하지 않습니다. clang 옵션
+  ``-fno-jump-tables`` 를 사용하여 switch table 생성을 비 활성화 할 수 있습니다.
+
+* clang ``-target bpf`` 의 경우, 포인터 또는 longi / unsigned long 타입은 기본
+  clang 바이너리 또는 기본 타겟(또는 커널)이 32 비트인지 여부에 관계없이 항상
+  64 비트의 크기를 가집니다. 그러나 네이티브 clang 타겟이 사용될 때 기본 아키
+  텍처의 규칙에 따라 이러한 유형을 컴파일 하며, 32 비트 아키텍처의 경우 포인터
+  또는 long/unsigned long 타입을 의미 하며, BPF 컨텍스트 구조는 32 비트의 너비
+  를 가지며, BPF LLVM 백엔드는 여전히 64 비트로 작동합니다.
+
+native 대상은 CPU 레지스터 또는 CPU의 레지스터 너비가 중요한 다른 커널 구조를
+매핑하는 ``struct pt_regs`` 이동 하는 경우 추적에 주로 필요합니다. 네트워킹
+과 같은 다른 모든 경우에는 ``clang -target bpf`` 를 사용하는 것이 좋습니다.
+
+Also, LLVM started to support 32-bit subregisters and BPF ALU32 instructions since
+LLVM's release 7.0. A new code generation attribute ``alu32`` is added. When it is
+enabled, LLVM will try to use 32-bit subregisters whenever possible, typically
+when there are operations on 32-bit types. The associated ALU instructions with
+32-bit subregisters will become ALU32 instructions. For example, for the
+following sample code:
+
+::
+
+    $ cat 32-bit-example.c
+        void cal(unsigned int *a, unsigned int *b, unsigned int *c)
+        {
+          unsigned int sum = *a + *b;
+          *c = sum;
+        }
+
+At default code generation, the assembler will looks like:
+
+::
+
+    $ clang -target bpf -emit-llvm -S 32-bit-example.c
+    $ llc -march=bpf 32-bit-example.ll
+    $ cat 32-bit-example.s
+        cal:
+          r1 = *(u32 *)(r1 + 0)
+          r2 = *(u32 *)(r2 + 0)
+          r2 += r1
+          *(u32 *)(r3 + 0) = r2
+          exit
+
+64-bit registers are used, hence the addition means 64-bit addition. Now, if you
+enable the new 32-bit subregisters support by specifying ``-mattr=+alu32``, then
+the assembler will looks like:
+
+::
+
+    $ llc -march=bpf -mattr=+alu32 32-bit-example.ll
+    $ cat 32-bit-example.s
+        cal:
+          w1 = *(u32 *)(r1 + 0)
+          w2 = *(u32 *)(r2 + 0)
+          w2 += w1
+          *(u32 *)(r3 + 0) = w2
+          exit
+
+``w`` register, meaning 32-bit subregister, will be used instead of 64-bit ``r``
+register.
+
+Enable 32-bit subregisters might help reducing type extension instruction
+sequences. It could also help kernel eBPF JIT compiler for 32-bit architectures
+for which registers pairs are used to model the 64-bit eBPF registers and extra
+instructions are needed for manipulating the high 32-bit. Given read from 32-bit
+subregister is guaranteed to read from low 32-bit only even though write still
+needs to clear the high 32-bit, if the JIT compiler has known the definition of
+one register only has subregister reads, then instructions for setting the high
+32-bit of the destination could be eliminated.
+
+Note inline assembly for BPF is currently unsupported.
+
+BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 어플리케이션 개발과 비교
+되며, 알고 있어야 할 몇 가지 저지르기 쉬운 실수가 있습니다.다음 항목에서는 BPF
+모델의 몇 가지 차이점에 대해 설명합니다:
+
+1. **Everything needs to be inlined, there are no function calls (on older
+   LLVM versions) or shared library calls available.**
 
    Shared libraries, etc cannot be used with BPF. However, common library
    code used in BPF programs can be placed into header files and included in
@@ -1074,11 +1367,13 @@ describe some of the differences for the BPF model:
    the kernel or other libraries and reuse their static inline functions or
    macros / definitions.
 
-   Eventually LLVM needs to compile the entire code into a flat sequence of
-   BPF instructions for a given program section. Best practice is to use an
-   annotation like ``__inline`` for every library function as shown below.
-   The use of ``always_inline`` is recommended, since the compiler could still
-   decide to uninline large functions that are only annotated as ``inline``.
+   Unless a recent kernel (4.16+) and LLVM (6.0+) is used where BPF to BPF
+   function calls are supported, then LLVM needs to compile and inline the
+   entire code into a flat sequence of BPF instructions for a given program
+   section. In such case, best practice is to use an annotation like ``__inline``
+   for every library function as shown below. The use of ``always_inline``
+   is recommended, since the compiler could still decide to uninline large
+   functions that are only annotated as ``inline``.
 
    In case the latter happens, LLVM will generate a relocation entry into
    the ELF file, which BPF ELF loaders such as iproute2 cannot resolve and
@@ -1276,11 +1571,11 @@ describe some of the differences for the BPF model:
 
     # tc filter show dev em1 ingress
     filter protocol all pref 49152 bpf
-    filter protocol all pref 49152 bpf handle 0x1 tc-example.o:[ingress] direct-action tag c5f7825e5dac396f
+    filter protocol all pref 49152 bpf handle 0x1 tc-example.o:[ingress] direct-action id 1 tag c5f7825e5dac396f
 
     # tc filter show dev em1 egress
     filter protocol all pref 49152 bpf
-    filter protocol all pref 49152 bpf handle 0x1 tc-example.o:[egress] direct-action tag b2fd5adc0f262714
+    filter protocol all pref 49152 bpf handle 0x1 tc-example.o:[egress] direct-action id 2 tag b2fd5adc0f262714
 
     # mount | grep bpf
     sysfs on /sys/fs/bpf type sysfs (rw,nosuid,nodev,noexec,relatime,seclabel)
@@ -1385,7 +1680,7 @@ describe some of the differences for the BPF model:
   due to an LLVM issue in the back end, and is therefore not recommended to be
   used until the issue is fixed.
 
-6. **There are no loops available.**
+6. **There are no loops available (yet).**
 
   The BPF verifier in the kernel checks that a BPF program does not contain
   loops by performing a depth first search of all possible program paths besides
@@ -1580,12 +1875,57 @@ describe some of the differences for the BPF model:
   map at index / key ``0`` with a new program residing in the object file ``new.o``
   under section ``foo``.
 
-8. **Limited stack space of 512 bytes.**
+8. **Limited stack space of maximum 512 bytes.**
 
   Stack space in BPF programs is limited to only 512 bytes, which needs to be
   taken into careful consideration when implementing BPF programs in C. However,
   as mentioned earlier in point 3, a ``BPF_MAP_TYPE_PERCPU_ARRAY`` map with a
   single entry can be used in order to enlarge scratch buffer space.
+
+9. **Use of BPF inline assembly possible.**
+
+  LLVM also allows to use inline assembly for BPF for the rare cases where it
+  might be needed. The following (nonsense) toy example shows a 64 bit atomic
+  add. Due to lack of documentation, LLVM source code in ``lib/Target/BPF/BPFInstrInfo.td``
+  as well as ``test/CodeGen/BPF/`` might be helpful for providing some additional
+  examples. Test code:
+
+  ::
+
+    #include <linux/bpf.h>
+
+    #ifndef __section
+    # define __section(NAME)                  \
+       __attribute__((section(NAME), used))
+    #endif
+
+    __section("prog")
+    int xdp_test(struct xdp_md *ctx)
+    {
+        __u64 a = 2, b = 3, *c = &a;
+        /* just a toy xadd example to show the syntax */
+        asm volatile("lock *(u64 *)(%0+0) += %1" : "=r"(c) : "r"(b), "0"(c));
+        return a;
+    }
+
+    char __license[] __section("license") = "GPL";
+
+  The above program is compiled into the following sequence of BPF
+  instructions:
+
+  ::
+
+    Verifier analysis:
+
+    0: (b7) r1 = 2
+    1: (7b) *(u64 *)(r10 -8) = r1
+    2: (b7) r1 = 3
+    3: (bf) r2 = r10
+    4: (07) r2 += -8
+    5: (db) lock *(u64 *)(r2 +0) += r1
+    6: (79) r0 = *(u64 *)(r10 -8)
+    7: (95) exit
+    processed 8 insns (limit 131072), stack depth 8
 
 iproute2
 --------
@@ -1637,6 +1977,32 @@ of all details, but enough for getting started.
 
     # ip link set dev em1 xdp obj prog.o sec foobar
 
+  Note that it is also possible to load the program out of the ``.text`` section.
+  Changing the minimal, stand-alone XDP drop program by removing the ``__section()``
+  annotation from the ``xdp_drop`` entry point would look like the following:
+
+  ::
+
+    #include <linux/bpf.h>
+
+    #ifndef __section
+    # define __section(NAME)                  \
+       __attribute__((section(NAME), used))
+    #endif
+
+    int xdp_drop(struct xdp_md *ctx)
+    {
+        return XDP_DROP;
+    }
+
+    char __license[] __section("license") = "GPL";
+
+  And can be loaded as follows:
+
+  ::
+
+    # ip link set dev em1 xdp obj prog.o sec .text
+
   By default, ``ip`` will throw an error in case a XDP program is already attached
   to the networking interface, to prevent it from being overridden by accident. In
   order to replace the currently running XDP program with a new one, the ``-force``
@@ -1655,9 +2021,10 @@ of all details, but enough for getting started.
 
   The ``ip link`` command will display an ``xdp`` flag if the interface has an XDP
   program attached. ``ip link | grep xdp`` can thus be used to find all interfaces
-  that have XDP running. Further introspection facilities will be provided through
-  the detailed view with ``ip -d link`` once the kernel API gains support for
-  dumping additional attributes.
+  that have XDP running. Further introspection facilities are provided through
+  the detailed view with ``ip -d link`` and ``bpftool`` can be used to retrieve
+  information about the attached program based on the BPF program ID shown in
+  the ``ip link`` dump.
 
   In order to remove the existing XDP program from the interface, the following
   command must be issued:
@@ -1665,6 +2032,131 @@ of all details, but enough for getting started.
   ::
 
     # ip link set dev em1 xdp off
+
+  In the case of switching a driver's operation mode from non-XDP to native XDP
+  and vice versa, typically the driver needs to reconfigure its receive (and
+  transmit) rings in order to ensure received packet are set up linearly
+  within a single page for BPF to read and write into. However, once completed,
+  then most drivers only need to perform an atomic replacement of the program
+  itself when a BPF program is requested to be swapped.
+
+  In total, XDP supports three operation modes which iproute2 implements as well:
+  ``xdpdrv``, ``xdpoffload`` and ``xdpgeneric``.
+
+  ``xdpdrv`` stands for native XDP, meaning the BPF program is run directly in
+  the driver's receive path at the earliest possible point in software. This is
+  the normal / conventional XDP mode and requires driver's to implement XDP
+  support, which all major 10G/40G/+ networking drivers in the upstream Linux
+  kernel already provide.
+
+  ``xdpgeneric`` stands for generic XDP and is intended as an experimental test
+  bed for drivers which do not yet support native XDP. Given the generic XDP hook
+  in the ingress path comes at a much later point in time when the packet already
+  enters the stack's main receive path as a ``skb``, the performance is significantly
+  less than with processing in ``xdpdrv`` mode. ``xdpgeneric`` therefore is for
+  the most part only interesting for experimenting, less for production environments.
+
+  Last but not least, the ``xdpoffload`` mode is implemented by SmartNICs such
+  as those supported by Netronome's nfp driver and allow for offloading the entire
+  BPF/XDP program into hardware, thus the program is run on each packet reception
+  directly on the card. This provides even higher performance than running in
+  native XDP although not all BPF map types or BPF helper functions are available
+  for use compared to native XDP. The BPF verifier will reject the program in
+  such case and report to the user what is unsupported. Other than staying in
+  the realm of supported BPF features and helper functions, no special precautions
+  have to be taken when writing BPF C programs.
+
+  When a command like ``ip link set dev em1 xdp obj [...]`` is used, then the
+  kernel will attempt to load the program first as native XDP, and in case the
+  driver does not support native XDP, it will automatically fall back to generic
+  XDP. Thus, for example, using explicitly ``xdpdrv`` instead of ``xdp``, the
+  kernel will only attempt to load the program as native XDP and fail in case
+  the driver does not support it, which provides a guarantee that generic XDP
+  is avoided altogether.
+
+  Example for enforcing a BPF/XDP program to be loaded in native XDP mode,
+  dumping the link details and unloading the program again:
+
+  ::
+
+     # ip -force link set dev em1 xdpdrv obj prog.o
+     # ip link show
+     [...]
+     6: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc mq state UP mode DORMANT group default qlen 1000
+         link/ether be:08:4d:b6:85:65 brd ff:ff:ff:ff:ff:ff
+         prog/xdp id 1 tag 57cd311f2e27366b
+     [...]
+     # ip link set dev em1 xdpdrv off
+
+  Same example now for forcing generic XDP, even if the driver would support
+  native XDP, and additionally dumping the BPF instructions of the attached
+  dummy program through bpftool:
+
+  ::
+
+    # ip -force link set dev em1 xdpgeneric obj prog.o
+    # ip link show
+    [...]
+    6: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdpgeneric qdisc mq state UP mode DORMANT group default qlen 1000
+        link/ether be:08:4d:b6:85:65 brd ff:ff:ff:ff:ff:ff
+        prog/xdp id 4 tag 57cd311f2e27366b                <-- BPF program ID 4
+    [...]
+    # bpftool prog dump xlated id 4                       <-- Dump of instructions running on em1
+    0: (b7) r0 = 1
+    1: (95) exit
+    # ip link set dev em1 xdpgeneric off
+
+  And last but not least offloaded XDP, where we additionally dump program
+  information via bpftool for retrieving general metadata:
+
+  ::
+
+     # ip -force link set dev em1 xdpoffload obj prog.o
+     # ip link show
+     [...]
+     6: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdpoffload qdisc mq state UP mode DORMANT group default qlen 1000
+         link/ether be:08:4d:b6:85:65 brd ff:ff:ff:ff:ff:ff
+         prog/xdp id 8 tag 57cd311f2e27366b
+     [...]
+     # bpftool prog show id 8
+     8: xdp  tag 57cd311f2e27366b dev em1                  <-- Also indicates a BPF program offloaded to em1
+         loaded_at Apr 11/20:38  uid 0
+         xlated 16B  not jited  memlock 4096B
+     # ip link set dev em1 xdpoffload off
+
+  Note that it is not possible to use ``xdpdrv`` and ``xdpgeneric`` or other
+  modes at the same time, meaning only one of the XDP operation modes must be
+  picked.
+
+  A switch between different XDP modes e.g. from generic to native or vice
+  versa is not atomically possible. Only switching programs within a specific
+  operation mode is:
+
+  ::
+
+     # ip -force link set dev em1 xdpgeneric obj prog.o
+     # ip -force link set dev em1 xdpoffload obj prog.o
+     RTNETLINK answers: File exists
+     # ip -force link set dev em1 xdpdrv obj prog.o
+     RTNETLINK answers: File exists
+     # ip -force link set dev em1 xdpgeneric obj prog.o    <-- Succeeds due to xdpgeneric
+     #
+
+  Switching between modes requires to first leave the current operation mode
+  in order to then enter the new one:
+
+  ::
+
+     # ip -force link set dev em1 xdpgeneric obj prog.o
+     # ip -force link set dev em1 xdpgeneric off
+     # ip -force link set dev em1 xdpoffload obj prog.o
+     # ip l
+     [...]
+     6: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdpoffload qdisc mq state UP mode DORMANT group default qlen 1000
+         link/ether be:08:4d:b6:85:65 brd ff:ff:ff:ff:ff:ff
+         prog/xdp id 17 tag 57cd311f2e27366b
+     [...]
+     # ip -force link set dev em1 xdpoffload off
 
 **2. Loading of tc BPF object files.**
 
@@ -1725,22 +2217,26 @@ of all details, but enough for getting started.
 
     # tc filter show dev em1 ingress
     filter protocol all pref 49152 bpf
-    filter protocol all pref 49152 bpf handle 0x1 prog.o:[ingress] direct-action tag c5f7825e5dac396f
+    filter protocol all pref 49152 bpf handle 0x1 prog.o:[ingress] direct-action id 1 tag c5f7825e5dac396f
 
     # tc filter show dev em1 egress
     filter protocol all pref 49152 bpf
-    filter protocol all pref 49152 bpf handle 0x1 prog.o:[egress] direct-action tag b2fd5adc0f262714
+    filter protocol all pref 49152 bpf handle 0x1 prog.o:[egress] direct-action id 2 tag b2fd5adc0f262714
 
   The output of ``prog.o:[ingress]`` tells that program section ``ingress`` was
   loaded from the file ``prog.o``, and ``bpf`` operates in ``direct-action`` mode.
-  The program tags are appended for each, which denotes a hash over the instruction
-  stream which can be used for debugging / introspection.
+  The program ``id`` and ``tag`` is appended for each case, where the latter denotes
+  a hash over the instruction stream which can be correlated with the object file
+  or ``perf`` reports with stack traces, etc. Last but not least, the ``id``
+  represents the system-wide unique BPF program identifier that can be used along
+  with ``bpftool`` to further inspect or dump the attached BPF program.
 
   tc can attach more than just a single BPF program, it provides various other
   classifiers which can be chained together. However, attaching a single BPF program
   is fully sufficient since all packet operations can be contained in the program
-  itself thanks to ``da`` (``direct-action``) mode. For optimal performance and
-  flexibility, this is the recommended usage.
+  itself thanks to ``da`` (``direct-action``) mode, meaning the BPF program itself
+  will already return the tc action verdict such as ``TC_ACT_OK``, ``TC_ACT_SHOT``
+  and others. For optimal performance and flexibility, this is the recommended usage.
 
   In the above ``show`` command, tc also displays ``pref 49152`` and
   ``handle 0x1`` next to the BPF related output. Both are auto-generated in
@@ -1762,7 +2258,7 @@ of all details, but enough for getting started.
 
     # tc filter show dev em1 ingress
     filter protocol all pref 1 bpf
-    filter protocol all pref 1 bpf handle 0x1 prog.o:[foobar] direct-action tag c5f7825e5dac396f
+    filter protocol all pref 1 bpf handle 0x1 prog.o:[foobar] direct-action id 1 tag c5f7825e5dac396f
 
   And for the atomic replacement, the following can be issued for updating the
   existing program at ``ingress`` hook with the new BPF program from the file
@@ -1787,6 +2283,65 @@ of all details, but enough for getting started.
   ::
 
     # tc qdisc del dev em1 clsact
+
+  tc BPF programs can also be offloaded if the NIC and driver has support for it
+  similarly as with XDP BPF programs. Netronome's nfp supported NICs offer both
+  types of BPF offload.
+
+  ::
+
+    # tc qdisc add dev em1 clsact
+    # tc filter replace dev em1 ingress pref 1 handle 1 bpf skip_sw da obj prog.o
+    Error: TC offload is disabled on net device.
+    We have an error talking to the kernel
+
+  If the above error is shown, then tc hardware offload first needs to be enabled
+  for the device through ethtool's ``hw-tc-offload`` setting:
+
+  ::
+
+    # ethtool -K em1 hw-tc-offload on
+    # tc qdisc add dev em1 clsact
+    # tc filter replace dev em1 ingress pref 1 handle 1 bpf skip_sw da obj prog.o
+    # tc filter show dev em1 ingress
+    filter protocol all pref 1 bpf
+    filter protocol all pref 1 bpf handle 0x1 prog.o:[classifier] direct-action skip_sw in_hw id 19 tag 57cd311f2e27366b
+
+  The ``in_hw`` flag confirms that the program has been offloaded to the NIC.
+
+  Note that BPF offloads for both tc and XDP cannot be loaded at the same time,
+  either the tc or XDP offload option must be selected.
+
+**3. Testing BPF offload interface via netdevsim driver.**
+
+  The netdevsim driver which is part of the Linux kernel provides a dummy driver
+  which implements offload interfaces for XDP BPF and tc BPF programs and
+  facilitates testing kernel changes or low-level user space programs
+  implementing a control plane directly against the kernel's UAPI.
+
+  A netdevsim device can be created as follows:
+
+  ::
+
+    # ip link add dev sim0 type netdevsim
+    # ip link set dev sim0 up
+    # ethtool -K sim0 hw-tc-offload on
+    # ip l
+    [...]
+    7: sim0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+        link/ether a2:24:4c:1c:c2:b3 brd ff:ff:ff:ff:ff:ff
+
+  After that step, XDP BPF or tc BPF programs can be test loaded as shown
+  in the various examples earlier:
+
+  ::
+
+    # ip -force link set dev sim0 xdpoffload obj prog.o
+    # ip l
+    [...]
+    7: sim0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 xdpoffload qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
+        link/ether a2:24:4c:1c:c2:b3 brd ff:ff:ff:ff:ff:ff
+        prog/xdp id 20 tag 57cd311f2e27366b
 
 These two workflows are the basic operations to load XDP BPF respectively tc BPF
 programs with iproute2.
@@ -1893,6 +2448,403 @@ pointers. After that all the programs themselves are created through the BPF
 system call, and tail called maps, if present, updated with the program's file
 descriptors.
 
+bpftool
+-------
+
+bpftool is the main introspection and debugging tool around BPF and developed
+and shipped along with the Linux kernel tree under ``tools/bpf/bpftool/``.
+
+The tool can dump all BPF programs and maps that are currently loaded in
+the system, or list and correlate all BPF maps used by a specific program.
+Furthermore, it allows to dump the entire map's key / value pairs, or
+lookup, update, delete individual ones as well as retrieve a key's neighbor
+key in the map. Such operations can be performed based on BPF program or
+map IDs or by specifying the location of a BPF file system pinned program
+or map. The tool additionally also offers an option to pin maps or programs
+into the BPF file system.
+
+For a quick overview of all BPF programs currently loaded on the host
+invoke the following command:
+
+  ::
+
+     # bpftool prog
+     398: sched_cls  tag 56207908be8ad877
+        loaded_at Apr 09/16:24  uid 0
+        xlated 8800B  jited 6184B  memlock 12288B  map_ids 18,5,17,14
+     399: sched_cls  tag abc95fb4835a6ec9
+        loaded_at Apr 09/16:24  uid 0
+        xlated 344B  jited 223B  memlock 4096B  map_ids 18
+     400: sched_cls  tag afd2e542b30ff3ec
+        loaded_at Apr 09/16:24  uid 0
+        xlated 1720B  jited 1001B  memlock 4096B  map_ids 17
+     401: sched_cls  tag 2dbbd74ee5d51cc8
+        loaded_at Apr 09/16:24  uid 0
+        xlated 3728B  jited 2099B  memlock 4096B  map_ids 17
+     [...]
+
+Similarly, to get an overview of all active maps:
+
+  ::
+
+    # bpftool map
+    5: hash  flags 0x0
+        key 20B  value 112B  max_entries 65535  memlock 13111296B
+    6: hash  flags 0x0
+        key 20B  value 20B  max_entries 65536  memlock 7344128B
+    7: hash  flags 0x0
+        key 10B  value 16B  max_entries 8192  memlock 790528B
+    8: hash  flags 0x0
+        key 22B  value 28B  max_entries 8192  memlock 987136B
+    9: hash  flags 0x0
+        key 20B  value 8B  max_entries 512000  memlock 49352704B
+    [...]
+
+Note that for each command, bpftool also supports json based output by
+appending ``--json`` at the end of the command line. An additional
+``--pretty`` improves the output to be more human readable.
+
+  ::
+
+     # bpftool prog --json --pretty
+
+For dumping the post-verifier BPF instruction image of a specific BPF
+program, one starting point could be to inspect a specific program, e.g.
+attached to the tc ingress hook:
+
+  ::
+
+     # tc filter show dev cilium_host egress
+     filter protocol all pref 1 bpf chain 0
+     filter protocol all pref 1 bpf chain 0 handle 0x1 bpf_host.o:[from-netdev] \
+                         direct-action not_in_hw id 406 tag e0362f5bd9163a0a jited
+
+The program from the object file ``bpf_host.o``, section ``from-netdev`` has
+a BPF program ID of ``406`` as denoted in ``id 406``. Based on this information
+bpftool can provide some high-level metadata specific to the program:
+
+  ::
+
+     # bpftool prog show id 406
+     406: sched_cls  tag e0362f5bd9163a0a
+          loaded_at Apr 09/16:24  uid 0
+          xlated 11144B  jited 7721B  memlock 12288B  map_ids 18,20,8,5,6,14
+
+The program of ID 406 is of type ``sched_cls`` (``BPF_PROG_TYPE_SCHED_CLS``),
+has a ``tag`` of ``e0362f5bd9163a0a`` (sha sum over the instruction sequence),
+it was loaded by root ``uid 0`` on ``Apr 09/16:24``. The BPF instruction
+sequence is ``11,144 bytes`` long and the JITed image ``7,721 bytes``. The
+program itself (excluding maps) consumes ``12,288 bytes`` that are accounted /
+charged against user ``uid 0``. And the BPF program uses the BPF maps with
+IDs ``18``, ``20``, ``8``, ``5``, ``6`` and ``14``. The latter IDs can further
+be used to get information or dump the map themselves.
+
+Additionally, bpftool can issue a dump request of the BPF instructions the
+program runs:
+
+  ::
+
+     # bpftool prog dump xlated id 406
+      0: (b7) r7 = 0
+      1: (63) *(u32 *)(r1 +60) = r7
+      2: (63) *(u32 *)(r1 +56) = r7
+      3: (63) *(u32 *)(r1 +52) = r7
+     [...]
+     47: (bf) r4 = r10
+     48: (07) r4 += -40
+     49: (79) r6 = *(u64 *)(r10 -104)
+     50: (bf) r1 = r6
+     51: (18) r2 = map[id:18]                    <-- BPF map id 18
+     53: (b7) r5 = 32
+     54: (85) call bpf_skb_event_output#5656112  <-- BPF helper call
+     55: (69) r1 = *(u16 *)(r6 +192)
+     [...]
+
+bpftool correlates BPF map IDs into the instruction stream as shown above
+as well as calls to BPF helpers or other BPF programs.
+
+The instruction dump reuses the same 'pretty-printer' as the kernel's BPF
+verifier. Since the program was JITed and therefore the actual JIT image
+that was generated out of above ``xlated`` instructions is executed, it
+can be dumped as well through bpftool:
+
+  ::
+
+     # bpftool prog dump jited id 406
+      0:        push   %rbp
+      1:        mov    %rsp,%rbp
+      4:        sub    $0x228,%rsp
+      b:        sub    $0x28,%rbp
+      f:        mov    %rbx,0x0(%rbp)
+     13:        mov    %r13,0x8(%rbp)
+     17:        mov    %r14,0x10(%rbp)
+     1b:        mov    %r15,0x18(%rbp)
+     1f:        xor    %eax,%eax
+     21:        mov    %rax,0x20(%rbp)
+     25:        mov    0x80(%rdi),%r9d
+     [...]
+
+Mainly for BPF JIT developers, the option also exists to interleave the
+disassembly with the actual native opcodes:
+
+  ::
+
+     # bpftool prog dump jited id 406 opcodes
+      0:        push   %rbp
+                55
+      1:        mov    %rsp,%rbp
+                48 89 e5
+      4:        sub    $0x228,%rsp
+                48 81 ec 28 02 00 00
+      b:        sub    $0x28,%rbp
+                48 83 ed 28
+      f:        mov    %rbx,0x0(%rbp)
+                48 89 5d 00
+     13:        mov    %r13,0x8(%rbp)
+                4c 89 6d 08
+     17:        mov    %r14,0x10(%rbp)
+                4c 89 75 10
+     1b:        mov    %r15,0x18(%rbp)
+                4c 89 7d 18
+     [...]
+
+The same interleaving can be done for the normal BPF instructions which
+can sometimes be useful for debugging in the kernel:
+
+  ::
+
+     # bpftool prog dump xlated id 406 opcodes
+      0: (b7) r7 = 0
+         b7 07 00 00 00 00 00 00
+      1: (63) *(u32 *)(r1 +60) = r7
+         63 71 3c 00 00 00 00 00
+      2: (63) *(u32 *)(r1 +56) = r7
+         63 71 38 00 00 00 00 00
+      3: (63) *(u32 *)(r1 +52) = r7
+         63 71 34 00 00 00 00 00
+      4: (63) *(u32 *)(r1 +48) = r7
+         63 71 30 00 00 00 00 00
+      5: (63) *(u32 *)(r1 +64) = r7
+         63 71 40 00 00 00 00 00
+      [...]
+
+The basic blocks of a program can also be visualized with the help of
+``graphviz``. For this purpose bpftool has a ``visual`` dump mode that
+generates a dot file instead of the plain BPF ``xlated`` instruction
+dump that can later be converted to a png file:
+
+  ::
+
+     # bpftool prog dump xlated id 406 visual &> output.dot
+     $ dot -Tpng output.dot -o output.png
+
+Another option would be to pass the dot file to dotty as a viewer, that
+is ``dotty output.dot``, where the result for the ``bpf_host.o`` program
+looks as follows (small extract):
+
+.. image:: images/bpf_dot.png
+    :align: center
+
+Note that the ``xlated`` instruction dump provides the post-verifier BPF
+instruction image which means that it dumps the instructions as if they
+were to be run through the BPF interpreter. In the kernel, the verifier
+performs various rewrites of the original instructions provided by the
+BPF loader.
+
+One example of rewrites is the inlining of helper functions in order to
+improve runtime performance, here in the case of a map lookup for hash
+tables:
+
+  ::
+
+     # bpftool prog dump xlated id 3
+      0: (b7) r1 = 2
+      1: (63) *(u32 *)(r10 -4) = r1
+      2: (bf) r2 = r10
+      3: (07) r2 += -4
+      4: (18) r1 = map[id:2]                      <-- BPF map id 2
+      6: (85) call __htab_map_lookup_elem#77408   <-+ BPF helper inlined rewrite
+      7: (15) if r0 == 0x0 goto pc+2                |
+      8: (07) r0 += 56                              |
+      9: (79) r0 = *(u64 *)(r0 +0)                <-+
+     10: (15) if r0 == 0x0 goto pc+24
+     11: (bf) r2 = r10
+     12: (07) r2 += -4
+     [...]
+
+bpftool correlates calls to helper functions or BPF to BPF calls through
+kallsyms. Therefore, make sure that JITed BPF programs are exposed to
+kallsyms (``bpf_jit_kallsyms``) and that kallsyms addresses are not
+obfuscated (calls are otherwise shown as ``call bpf_unspec#0``):
+
+  ::
+
+     # echo 0 > /proc/sys/kernel/kptr_restrict
+     # echo 1 > /proc/sys/net/core/bpf_jit_kallsyms
+
+BPF to BPF calls are correlated as well for both, interpreter as well
+as JIT case. In the latter, the tag of the subprogram is shown as
+call target. In each case, the ``pc+2`` is the pc-relative offset of
+the call target, which denotes the subprogram.
+
+  ::
+
+     # bpftool prog dump xlated id 1
+     0: (85) call pc+2#__bpf_prog_run_args32
+     1: (b7) r0 = 1
+     2: (95) exit
+     3: (b7) r0 = 2
+     4: (95) exit
+
+JITed variant of the dump:
+
+  ::
+
+     # bpftool prog dump xlated id 1
+     0: (85) call pc+2#bpf_prog_3b185187f1855c4c_F
+     1: (b7) r0 = 1
+     2: (95) exit
+     3: (b7) r0 = 2
+     4: (95) exit
+
+In the case of tail calls, the kernel maps them into a single instruction
+internally, bpftool will still correlate them as a helper call for ease
+of debugging:
+
+  ::
+
+     # bpftool prog dump xlated id 2
+     [...]
+     10: (b7) r2 = 8
+     11: (85) call bpf_trace_printk#-41312
+     12: (bf) r1 = r6
+     13: (18) r2 = map[id:1]
+     15: (b7) r3 = 0
+     16: (85) call bpf_tail_call#12
+     17: (b7) r1 = 42
+     18: (6b) *(u16 *)(r6 +46) = r1
+     19: (b7) r0 = 0
+     20: (95) exit
+
+     # bpftool map show id 1
+     1: prog_array  flags 0x0
+           key 4B  value 4B  max_entries 1  memlock 4096B
+
+Dumping an entire map is possible through the ``map dump`` subcommand
+which iterates through all present map elements and dumps the key /
+value pairs.
+
+If no BTF (BPF Type Format) data is available for a given map, then
+the key / value pairs are dumped as hex:
+
+  ::
+
+     # bpftool map dump id 5
+     key:
+     f0 0d 00 00 00 00 00 00  0a 66 00 00 00 00 8a d6
+     02 00 00 00
+     value:
+     00 00 00 00 00 00 00 00  01 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     key:
+     0a 66 1c ee 00 00 00 00  00 00 00 00 00 00 00 00
+     01 00 00 00
+     value:
+     00 00 00 00 00 00 00 00  01 00 00 00 00 00 00 00
+     00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00
+     [...]
+     Found 6 elements
+
+However, with BTF, the map also holds debugging information about
+the key and value structures. For example, BTF in combination with
+BPF maps and the BPF_ANNOTATE_KV_PAIR() macro from iproute2 will
+result in the following dump (``test_xdp_noinline.o`` from kernel
+selftests):
+
+  ::
+
+     # cat tools/testing/selftests/bpf/test_xdp_noinline.c
+       [...]
+        struct ctl_value {
+              union {
+                      __u64 value;
+                      __u32 ifindex;
+                      __u8 mac[6];
+              };
+        };
+
+        struct bpf_map_def __attribute__ ((section("maps"), used)) ctl_array = {
+               .type		= BPF_MAP_TYPE_ARRAY,
+               .key_size	= sizeof(__u32),
+               .value_size	= sizeof(struct ctl_value),
+               .max_entries	= 16,
+               .map_flags	= 0,
+        };
+        BPF_ANNOTATE_KV_PAIR(ctl_array, __u32, struct ctl_value);
+
+        [...]
+
+The BPF_ANNOTATE_KV_PAIR() macro forces a map-specific ELF section
+containing an empty key and value, this enables the iproute2 BPF loader
+to correlate BTF data with that section and thus allows to choose the
+corresponding types out of the BTF for loading the map.
+
+Compiling through LLVM and generating BTF through debugging information
+by ``pahole``:
+
+  ::
+
+     # clang [...] -O2 -target bpf -g -emit-llvm -c test_xdp_noinline.c -o - |
+       llc -march=bpf -mcpu=probe -mattr=dwarfris -filetype=obj -o test_xdp_noinline.o
+     # pahole -J test_xdp_noinline.o
+
+Now loading into kernel and dumping the map via bpftool:
+
+  ::
+
+     # ip -force link set dev lo xdp obj test_xdp_noinline.o sec xdp-test
+     # ip a
+     1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 xdpgeneric/id:227 qdisc noqueue state UNKNOWN group default qlen 1000
+         link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+         inet 127.0.0.1/8 scope host lo
+            valid_lft forever preferred_lft forever
+         inet6 ::1/128 scope host
+            valid_lft forever preferred_lft forever
+     [...]
+     # bpftool prog show id 227
+     227: xdp  tag a85e060c275c5616  gpl
+         loaded_at 2018-07-17T14:41:29+0000  uid 0
+         xlated 8152B  not jited  memlock 12288B  map_ids 381,385,386,382,384,383
+     # bpftool map dump id 386
+      [{
+           "key": 0,
+           "value": {
+               "": {
+                   "value": 0,
+                   "ifindex": 0,
+                   "mac": []
+               }
+           }
+       },{
+           "key": 1,
+           "value": {
+               "": {
+                   "value": 0,
+                   "ifindex": 0,
+                   "mac": []
+               }
+           }
+       },{
+     [...]
+
+Lookup, update, delete, and 'get next key' operations on the map for specific
+keys can be performed through bpftool as well.
+
 BPF sysctls
 -----------
 
@@ -1943,6 +2895,23 @@ The Linux kernel provides few sysctls that are BPF related and covered in this s
   | 1     | Enable JIT kallsyms export for privileged users only              |
   +-------+-------------------------------------------------------------------+
 
+* ``/proc/sys/kernel/unprivileged_bpf_disabled``: Enables or disable unprivileged
+  use of the ``bpf(2)`` system call. The Linux kernel has unprivileged use of
+  ``bpf(2)`` enabled by default, but once the switch is flipped, unprivileged use
+  will be permanently disabled until the next reboot. This sysctl knob is a one-time
+  switch, meaning if once set, then neither an application nor an admin can reset
+  the value anymore. This knob does not affect any cBPF programs such as seccomp
+  or traditional socket filters that do not use the ``bpf(2)`` system call for
+  loading the program into the kernel.
+
+  +-------+-------------------------------------------------------------------+
+  | Value | Description                                                       |
+  +-------+-------------------------------------------------------------------+
+  | 0     | Unprivileged use of bpf syscall enabled (kernel's default value)  |
+  +-------+-------------------------------------------------------------------+
+  | 1     | Unprivileged use of bpf syscall disabled                          |
+  +-------+-------------------------------------------------------------------+
+
 Kernel Testing
 --------------
 
@@ -1990,7 +2959,7 @@ size when possible. ``image`` contains the address of the generated JIT image, `
 and ``pid`` the user space application name and PID respectively, which triggered the
 compilation process. The dump output for eBPF and cBPF JITs is the same format.
 
-In the kernel tree under ``tools/net/``, there is a tool called ``bpf_jit_disasm``. It
+In the kernel tree under ``tools/bpf/``, there is a tool called ``bpf_jit_disasm``. It
 reads out the latest dump and prints the disassembly for further inspection:
 
 ::
@@ -2067,6 +3036,10 @@ Alternatively, the tool can also dump related opcodes along with the disassembly
       45:       retq
         c3
 
+More recently, ``bpftool`` adapted the same feature of dumping the BPF JIT
+image based on a given BPF program ID already loaded in the system (see
+bpftool section).
+
 For performance analysis of JITed BPF programs, ``perf`` can be used as
 usual. As a prerequisite, JITed programs need to be exported through kallsyms
 infrastructure.
@@ -2090,7 +3063,7 @@ would then release the cloned ``skb`` again and return with an error message.
     # tc filter add dev em1 ingress bpf da obj prog.o sec main
     # tc filter show dev em1 ingress
     filter protocol all pref 49152 bpf
-    filter protocol all pref 49152 bpf handle 0x1 prog.o:[main] direct-action tag 8227addf251b7543
+    filter protocol all pref 49152 bpf handle 0x1 prog.o:[main] direct-action id 1 tag 8227addf251b7543
 
     # cat /proc/kallsyms
     [...]
@@ -2200,44 +3173,1026 @@ with a sufficiently large limit could be performed. The ``RLIMIT_MEMLOCK`` is
 mainly enforcing limits for unprivileged users. Depending on the setup,
 setting a higher limit for privileged users is often acceptable.
 
-tc (traffic control)
-====================
+Program Types
+=============
 
-TODO
+At the time of this writing, there are eighteen different BPF program types
+available, two of the main types for networking are further explained in below
+subsections, namely XDP BPF programs as well as tc BPF programs. Extensive
+usage examples for the two program types for LLVM, iproute2 or other tools
+are spread throughout the toolchain section and not covered here. Instead,
+this section focuses on their architecture, concepts and use cases.
 
 XDP
-===
+---
 
-TODO
+XDP stands for eXpress Data Path and provides a framework for BPF that enables
+high-performance programmable packet processing in the Linux kernel. It runs
+the BPF program at the earliest possible point in software, namely at the moment
+the network driver receives the packet.
+
+At this point in the fast-path the driver just picked up the packet from its
+receive rings, without having done any expensive operations such as allocating
+an ``skb`` for pushing the packet further up the networking stack, without
+having pushed the packet into the GRO engine, etc. Thus, the XDP BPF program
+is executed at the earliest point when it becomes available to the CPU for
+processing.
+
+XDP works in concert with the Linux kernel and its infrastructure, meaning
+the kernel is not bypassed as in various networking frameworks that operate
+in user space only. Keeping the packet in kernel space has several major
+advantages:
+
+* XDP is able to reuse all the upstream developed kernel networking drivers,
+  user space tooling, or even other available in-kernel infrastructure such
+  as routing tables, sockets, etc in BPF helper calls itself.
+* Residing in kernel space, XDP has the same security model as the rest of
+  the kernel for accessing hardware.
+* There is no need for crossing kernel / user space boundaries since the
+  processed packet already resides in the kernel and can therefore flexibly
+  forward packets into other in-kernel entities like namespaces used by
+  containers or the kernel's networking stack itself. This is particularly
+  relevant in times of Meltdown and Spectre.
+* Punting packets from XDP to the kernel's robust, widely used and efficient
+  TCP/IP stack is trivially possible, allows for full reuse and does not
+  require maintaining a separate TCP/IP stack as with user space frameworks.
+* The use of BPF allows for full programmability, keeping a stable ABI with
+  the same 'never-break-user-space' guarantees as with the kernel's system
+  call ABI and compared to modules it also provides safety measures thanks to
+  the BPF verifier that ensures the stability of the kernel's operation.
+* XDP trivially allows for atomically swapping programs during runtime without
+  any network traffic interruption or even kernel / system reboot.
+* XDP allows for flexible structuring of workloads integrated into
+  the kernel. For example, it can operate in "busy polling" or "interrupt
+  driven" mode. Explicitly dedicating CPUs to XDP is not required. There
+  are no special hardware requirements and it does not rely on hugepages.
+* XDP does not require any third party kernel modules or licensing. It is
+  a long-term architectural solution, a core part of the Linux kernel, and
+  developed by the kernel community.
+* XDP is already enabled and shipped everywhere with major distributions
+  running a kernel equivalent to 4.8 or higher and supports most major 10G
+  or higher networking drivers.
+
+As a framework for running BPF in the driver, XDP additionally ensures that
+packets are laid out linearly and fit into a single DMA'ed page which is
+readable and writable by the BPF program. XDP also ensures that additional
+headroom of 256 bytes is available to the program for implementing custom
+encapsulation headers with the help of the ``bpf_xdp_adjust_head()`` BPF helper
+or adding custom metadata in front of the packet through ``bpf_xdp_adjust_meta()``.
+
+The framework contains XDP action codes further described in the section
+below which a BPF program can return in order to instruct the driver how
+to proceed with the packet, and it enables the possibility to atomically
+replace BPF programs running at the XDP layer. XDP is tailored for
+high-performance by design. BPF allows to access the packet data through
+'direct packet access' which means that the program holds data pointers
+directly in registers, loads the content into registers, respectively
+writes from there into the packet.
+
+The packet representation in XDP that is passed to the BPF program as
+the BPF context looks as follows:
+
+::
+
+    struct xdp_buff {
+        void *data;
+        void *data_end;
+        void *data_meta;
+        void *data_hard_start;
+        struct xdp_rxq_info *rxq;
+    };
+
+``data`` points to the start of the packet data in the page, and as the
+name suggests, ``data_end`` points to the end of the packet data. Since XDP
+allows for a headroom, ``data_hard_start`` points to the maximum possible
+headroom start in the page, meaning, when the packet should be encapsulated,
+then ``data`` is moved closer towards ``data_hard_start`` via ``bpf_xdp_adjust_head()``.
+The same BPF helper function also allows for decapsulation in which case
+``data`` is moved further away from ``data_hard_start``.
+
+``data_meta`` initially points to the same location as ``data`` but
+``bpf_xdp_adjust_meta()`` is able to move the pointer towards ``data_hard_start``
+as well in order to provide room for custom metadata which is invisible to
+the normal kernel networking stack but can be read by tc BPF programs since
+it is transferred from XDP to the ``skb``. Vice versa, it can remove or reduce
+the size of the custom metadata through the same BPF helper function by
+moving ``data_meta`` away from ``data_hard_start`` again. ``data_meta`` can
+also be used solely for passing state between tail calls similarly to the
+``skb->cb[]`` control block case that is accessible in tc BPF programs.
+
+This gives the following relation respectively invariant for the ``struct xdp_buff``
+packet pointers: ``data_hard_start`` <= ``data_meta`` <= ``data`` < ``data_end``.
+
+The ``rxq`` field points to some additional per receive queue metadata which
+is populated at ring setup time (not at XDP runtime):
+
+::
+
+    struct xdp_rxq_info {
+        struct net_device *dev;
+        u32 queue_index;
+        u32 reg_state;
+    } ____cacheline_aligned;
+
+The BPF program can retrieve ``queue_index`` as well as additional data
+from the netdevice itself such as ``ifindex``, etc.
+
+**BPF program return codes**
+
+After running the XDP BPF program, a verdict is returned from the program in
+order to tell the driver how to process the packet next. In the ``linux/bpf.h``
+system header file all available return verdicts are enumerated:
+
+::
+
+    enum xdp_action {
+        XDP_ABORTED = 0,
+        XDP_DROP,
+        XDP_PASS,
+        XDP_TX,
+        XDP_REDIRECT,
+    };
+
+``XDP_DROP`` as the name suggests will drop the packet right at the driver
+level without wasting any further resources. This is in particular useful
+for BPF programs implementing DDoS mitigation mechanisms or firewalling in
+general. The ``XDP_PASS`` return code means that the packet is allowed to
+be passed up to the kernel's networking stack. Meaning, the current CPU
+that was processing this packet now allocates a ``skb``, populates it, and
+passes it onwards into the GRO engine. This would be equivalent to the
+default packet handling behavior without XDP. With ``XDP_TX`` the BPF program
+has an efficient option to transmit the network packet out of the same NIC it
+just arrived on again. This is typically useful when few nodes are implementing,
+for example, firewalling with subsequent load balancing in a cluster and
+thus act as a hairpinned load balancer pushing the incoming packets back
+into the switch after rewriting them in XDP BPF. ``XDP_REDIRECT`` is similar
+to ``XDP_TX`` in that it is able to transmit the XDP packet, but through
+another NIC. Another option for the ``XDP_REDIRECT`` case is to redirect
+into a BPF cpumap, meaning, the CPUs serving XDP on the NIC's receive queues
+can continue to do so and push the packet for processing the upper kernel
+stack to a remote CPU. This is similar to ``XDP_PASS``, but with the ability
+that the XDP BPF program can keep serving the incoming high load as opposed
+to temporarily spend work on the current packet for pushing into upper
+layers. Last but not least, ``XDP_ABORTED`` which serves denoting an exception
+like state from the program and has the same behavior as ``XDP_DROP`` only
+that ``XDP_ABORTED`` passes the ``trace_xdp_exception`` tracepoint which
+can be additionally monitored to detect misbehavior.
+
+**Use cases for XDP**
+
+Some of the main use cases for XDP are presented in this subsection. The
+list is non-exhaustive and given the programmability and efficiency XDP
+and BPF enables, it can easily be adapted to solve very specific use
+cases.
+
+* **DDoS mitigation, firewalling**
+
+  One of the basic XDP BPF features is to tell the driver to drop a packet
+  with ``XDP_DROP`` at this early stage which allows for any kind of efficient
+  network policy enforcement with having an extremely low per-packet cost.
+  This is ideal in situations when needing to cope with any sort of DDoS
+  attacks, but also more general allows to implement any sort of firewalling
+  policies with close to no overhead in BPF e.g. in either case as stand alone
+  appliance (e.g. scrubbing 'clean' traffic through ``XDP_TX``) or widely
+  deployed on nodes protecting end hosts themselves (via ``XDP_PASS`` or
+  cpumap ``XDP_REDIRECT`` for good traffic). Offloaded XDP takes this even
+  one step further by moving the already small per-packet cost entirely
+  into the NIC with processing at line-rate.
+
+..
+
+* **Forwarding and load-balancing**
+
+  Another major use case of XDP is packet forwarding and load-balancing
+  through either ``XDP_TX`` or ``XDP_REDIRECT`` actions. The packet can
+  be arbitrarily mangled by the BPF program running in the XDP layer,
+  even BPF helper functions are available for increasing or decreasing
+  the packet's headroom in order to arbitrarily encapsulate respectively
+  decapsulate the packet before sending it out again. With ``XDP_TX``
+  hairpinned load-balancers can be implemented that push the packet out
+  of the same networking device it originally arrived on, or with the
+  ``XDP_REDIRECT`` action it can be forwarded to another NIC for
+  transmission. The latter return code can also be used in combination
+  with BPF's cpumap to load-balance packets for passing up the local
+  stack, but on remote, non-XDP processing CPUs.
+
+..
+
+* **Pre-stack filtering / processing**
+
+  Besides policy enforcement, XDP can also be used for hardening the
+  kernel's networking stack with the help of ``XDP_DROP`` case, meaning,
+  it can drop irrelevant packets for a local node right at the earliest
+  possible point before the networking stack sees them e.g. given we
+  know that a node only serves TCP traffic, any UDP, SCTP or other L4
+  traffic can be dropped right away. This has the advantage that packets
+  do not need to traverse various entities like GRO engine, the kernel's
+  flow dissector and others before it can be determined to drop them and
+  thus this allows for reducing the kernel's attack surface. Thanks to
+  XDP's early processing stage, this effectively 'pretends' to the kernel's
+  networking stack that these packets have never been seen by the networking
+  device. Additionally, if a potential bug in the stack's receive path
+  got uncovered and would cause a 'ping of death' like scenario, XDP can be
+  utilized to drop such packets right away without having to reboot the
+  kernel or restart any services. Due to the ability to atomically swap
+  such programs to enforce a drop of bad packets, no network traffic is
+  even interrupted on a host.
+
+  Another use case for pre-stack processing is that given the kernel has not
+  yet allocated an ``skb`` for the packet, the BPF program is free to modify
+  the packet and, again, have it 'pretend' to the stack that it was received
+  by the networking device this way. This allows for cases such as having
+  custom packet mangling and encapsulation protocols where the packet can be
+  decapsulated prior to entering GRO aggregation in which GRO otherwise would
+  not be able to perform any sort of aggregation due to not being aware of
+  the custom protocol. XDP also allows to push metadata (non-packet data) in
+  front of the packet. This is 'invisible' to the normal kernel stack, can
+  be GRO aggregated (for matching metadata) and later on processed in
+  coordination with a tc ingress BPF program where it has the context of
+  a ``skb`` available for e.g. setting various skb fields.
+
+..
+
+* **Flow sampling, monitoring**
+
+  XDP can also be used for cases such as packet monitoring, sampling or any
+  other network analytics, for example, as part of an intermediate node in
+  the path or on end hosts in combination also with prior mentioned use cases.
+  For complex packet analysis, XDP provides a facility to efficiently push
+  network packets (truncated or with full payload) and custom metadata into
+  a fast lockless per CPU memory mapped ring buffer provided from the Linux
+  perf infrastructure to an user space application. This also allows for
+  cases where only a flow's initial data can be analyzed and once determined
+  as good traffic having the monitoring bypassed. Thanks to the flexibility
+  brought by BPF, this allows for implementing any sort of custom monitoring
+  or sampling.
+
+..
+
+One example of XDP BPF production usage is Facebook's SHIV and Droplet
+infrastructure which implement their L4 load-balancing and DDoS countermeasures.
+Migrating their production infrastructure away from netfilter's IPVS
+(IP Virtual Server) over to XDP BPF allowed for a 10x speedup compared
+to their previous IPVS setup. This was first presented at the netdev 2.1
+conference:
+
+* Slides: https://www.netdevconf.org/2.1/slides/apr6/zhou-netdev-xdp-2017.pdf
+* Video: https://youtu.be/YEU2ClcGqts
+
+Another example is the integration of XDP into Cloudflare's DDoS mitigation
+pipeline, which originally was using cBPF instead of eBPF for attack signature
+matching through iptables' ``xt_bpf`` module. Due to use of iptables this
+caused severe performance problems under attack where a user space bypass
+solution was deemed necessary but came with drawbacks as well such as needing
+to busy poll the NIC and expensive packet re-injection into the kernel's stack.
+The migration over to eBPF and XDP combined best of both worlds by having
+high-performance programmable packet processing directly inside the kernel:
+
+* Slides: https://www.netdevconf.org/2.1/slides/apr6/bertin_Netdev-XDP.pdf
+* Video: https://youtu.be/7OuOukmuivg
+
+**XDP operation modes**
+
+XDP has three operation modes where 'native' XDP is the default mode. When
+talked about XDP this mode is typically implied.
+
+* **Native XDP**
+
+  This is the default mode where the XDP BPF program is run directly out
+  of the networking driver's early receive path. Most widespread used NICs
+  for 10G and higher support native XDP already.
+
+..
+
+* **Offloaded XDP**
+
+  In the offloaded XDP mode the XDP BPF program is directly offloaded into
+  the NIC instead of being executed on the host CPU. Thus, the already
+  extremely low per-packet cost is pushed off the host CPU entirely and
+  executed on the NIC, providing even higher performance than running in
+  native XDP. This offload is typically implemented by SmartNICs
+  containing multi-threaded, multicore flow processors where a in-kernel
+  JIT compiler translates BPF into native instructions for the latter.
+  Drivers supporting offloaded XDP usually also support native XDP for
+  cases where some BPF helpers may not yet or only be available for the
+  native mode.
+
+..
+
+* **Generic XDP**
+
+  For drivers not implementing native or offloaded XDP yet, the kernel
+  provides an option for generic XDP which does not require any driver
+  changes since run at a much later point out of the networking stack.
+  This setting is primarily targeted at developers who want to write and
+  test programs against the kernel's XDP API, and will not operate at the
+  performance rate of the native or offloaded modes. For XDP usage in a
+  production environment either the native or offloaded mode is better
+  suited and the recommended way to run XDP.
+
+..
+
+**Driver support**
+
+Since BPF and XDP is evolving quickly in terms of feature and driver support,
+the following lists native and offloaded XDP drivers as of kernel 4.17.
+
+**Drivers supporting native XDP**
+
+* **Broadcom**
+
+  * bnxt
+
+..
+
+* **Cavium**
+
+  * thunderx
+
+..
+
+* **Intel**
+
+  * ixgbe
+  * ixgbevf
+  * i40e
+
+..
+
+* **Mellanox**
+
+  * mlx4
+  * mlx5
+
+..
+
+* **Netronome**
+
+  * nfp
+
+..
+
+* **Others**
+
+  * tun
+  * virtio_net
+
+..
+
+* **Qlogic**
+
+  * qede
+
+..
+
+* **Solarflare**
+
+  * sfc [1]_
+
+**Drivers supporting offloaded XDP**
+
+* **Netronome**
+
+  * nfp [2]_
+
+Note that examples for writing and loading XDP programs are included in
+the toolchain section under the respective tools.
+
+.. [1] XDP for sfc available via out of tree driver as of kernel 4.17, but
+   will be upstreamed soon.
+.. [2] Some BPF helper functions such as retrieving the current CPU number
+   will not be available in an offloaded setting.
+
+tc (traffic control)
+--------------------
+
+Aside from other program types such as XDP, BPF can also be used out of the
+kernel's tc (traffic control) layer in the networking data path. On a high-level
+there are three major differences when comparing XDP BPF programs to tc BPF
+ones:
+
+* The BPF input context is a ``sk_buff`` not a ``xdp_buff``. When the kernel's
+  networking stack receives a packet, after the XDP layer, it allocates a buffer
+  and parses the packet to store metadata about the packet. This representation
+  is known as the ``sk_buff``. This structure is then exposed in the BPF input
+  context so that BPF programs from the tc ingress layer can use the metadata that
+  the stack extracts from the packet. This can be useful, but comes with an
+  associated cost of the stack performing this allocation and metadata extraction,
+  and handling the packet until it hits the tc hook. By definition, the ``xdp_buff``
+  doesn't have access to this metadata because the XDP hook is called before
+  this work is done. This is a significant contributor to the performance
+  difference between the XDP and tc hooks.
+
+  Therefore, BPF programs attached to the tc BPF hook can, for instance, read or
+  write the skb's ``mark``, ``pkt_type``, ``protocol``, ``priority``,
+  ``queue_mapping``, ``napi_id``, ``cb[]`` array, ``hash``, ``tc_classid`` or
+  ``tc_index``, vlan metadata, the XDP transferred custom metadata and various
+  other information. All members of the ``struct __sk_buff`` BPF context used
+  in tc BPF are defined in the ``linux/bpf.h`` system header.
+
+  Generally, the ``sk_buff`` is of a completely different nature than
+  ``xdp_buff`` where both come with advantages and disadvantages. For example,
+  the ``sk_buff`` case has the advantage that it is rather straight forward to
+  mangle its associated metadata, however, it also contains a lot of protocol
+  specific information (e.g. GSO related state) which makes it difficult to
+  simply switch protocols by solely rewriting the packet data. This is due to
+  the stack processing the packet based on the metadata rather than having the
+  cost of accessing the packet contents each time. Thus, additional conversion
+  is required from BPF helper functions taking care that ``sk_buff`` internals
+  are properly converted as well. The ``xdp_buff`` case however does not
+  face such issues since it comes at such an early stage where the kernel
+  has not even allocated an ``sk_buff`` yet, thus packet rewrites of any
+  kind can be realized trivially. However, the ``xdp_buff`` case has the
+  disadvantage that ``sk_buff`` metadata is not available for mangling
+  at this stage. The latter is overcome by passing custom metadata from
+  XDP BPF to tc BPF, though. In this way, the limitations of each program
+  type can be overcome by operating complementary programs of both types
+  as the use case requires.
+
+..
+
+* Compared to XDP, tc BPF programs can be triggered out of ingress and also
+  egress points in the networking data path as opposed to ingress only in
+  the case of XDP.
+
+  The two hook points ``sch_handle_ingress()`` and ``sch_handle_egress()`` in
+  the kernel are triggered out of ``__netif_receive_skb_core()`` and
+  ``__dev_queue_xmit()``, respectively. The latter two are the main receive
+  and transmit functions in the data path that, setting XDP aside, are triggered
+  for every network packet going in or coming out of the node allowing for
+  full visibility for tc BPF programs at these hook points.
+
+..
+
+* The tc BPF programs do not require any driver changes since they are run
+  at hook points in generic layers in the networking stack. Therefore, they
+  can be attached to any type of networking device.
+
+  While this provides flexibility, it also trades off performance compared
+  to running at the native XDP layer. However, tc BPF programs still come
+  at the earliest point in the generic kernel's networking data path after
+  GRO has been run but **before** any protocol processing, traditional iptables
+  firewalling such as iptables PREROUTING or nftables ingress hooks or other
+  packet processing takes place. Likewise on egress, tc BPF programs execute
+  at the latest point before handing the packet to the driver itself for
+  transmission, meaning **after** traditional iptables firewalling hooks like
+  iptables POSTROUTING, but still before handing the packet to the kernel's
+  GSO engine.
+
+  One exception which does require driver changes however are offloaded tc
+  BPF programs, typically provided by SmartNICs in a similar way as offloaded
+  XDP just with differing set of features due to the differences in the BPF
+  input context, helper functions and verdict codes.
+
+..
+
+BPF programs run in the tc layer are run from the ``cls_bpf`` classifier.
+While the tc terminology describes the BPF attachment point as a "classifier",
+this is a bit misleading since it under-represents what ``cls_bpf`` is
+capable of. That is to say, a fully programmable packet processor being able
+not only to read the ``skb`` metadata and packet data, but to also arbitrarily
+mangle both, and terminate the tc processing with an action verdict. ``cls_bpf``
+can thus be regarded as a self-contained entity that manages and executes tc
+BPF programs.
+
+``cls_bpf`` can hold one or more tc BPF programs. In the case where Cilium
+deploys ``cls_bpf`` programs, it attaches only a single program for a given hook
+in ``direct-action`` mode. Typically, in the traditional tc scheme, there is a
+split between classifier and action modules, where the classifier has one
+or more actions attached to it that are triggered once the classifier has a
+match. In the modern world for using tc in the software data path this model
+does not scale well for complex packet processing. Given tc BPF programs
+attached to ``cls_bpf`` are fully self-contained, they effectively fuse the
+parsing and action process together into a single unit. Thanks to ``cls_bpf``'s
+``direct-action`` mode, it will just return the tc action verdict and
+terminate the processing pipeline immediately. This allows for implementing
+scalable programmable packet processing in the networking data path by avoiding
+linear iteration of actions. ``cls_bpf`` is the only such "classifier" module
+in the tc layer capable of such a fast-path.
+
+Like XDP BPF programs, tc BPF programs can be atomically updated at runtime
+via ``cls_bpf`` without interrupting any network traffic or having to restart
+services.
+
+Both the tc ingress and the egress hook where ``cls_bpf`` itself can be
+attached to is managed by a pseudo qdisc called ``sch_clsact``. This is a
+drop-in replacement and proper superset of the ingress qdisc since it
+is able to manage both, ingress and egress tc hooks. For tc's egress hook
+in ``__dev_queue_xmit()`` it is important to stress that it is not executed
+under the kernel's qdisc root lock. Thus, both tc ingress and egress hooks
+are executed in a lockless manner in the fast-path. In either case, preemption
+is disabled and execution happens under RCU read side.
+
+Typically on egress there are qdiscs attached to netdevices such as ``sch_mq``,
+``sch_fq``, ``sch_fq_codel`` or ``sch_htb`` where some of them are classful
+qdiscs that contain subclasses and thus require a packet classification
+mechanism to determine a verdict where to demux the packet. This is handled
+by a call to ``tcf_classify()`` which calls into tc classifiers if present.
+``cls_bpf`` can also be attached and used in such cases. Such operation usually
+happens under the qdisc root lock and can be subject to lock contention. The
+``sch_clsact`` qdisc's egress hook comes at a much earlier point however which
+does not fall under that and operates completely independent from conventional
+egress qdiscs. Thus for cases like ``sch_htb`` the ``sch_clsact`` qdisc could
+perform the heavy lifting packet classification through tc BPF outside of the
+qdisc root lock, setting the ``skb->mark`` or ``skb->priority`` from there such
+that ``sch_htb`` only requires a flat mapping without expensive packet
+classification under the root lock thus reducing contention.
+
+Offloaded tc BPF programs are supported for the case of ``sch_clsact`` in
+combination with ``cls_bpf`` where the prior loaded BPF program was JITed
+from a SmartNIC driver to be run natively on the NIC. Only ``cls_bpf``
+programs operating in ``direct-action`` mode are supported to be offloaded.
+``cls_bpf`` only supports offloading a single program and cannot offload
+multiple programs. Furthermore only the ingress hook supports offloading
+BPF programs.
+
+One ``cls_bpf`` instance is able to hold multiple tc BPF programs internally.
+If this is the case, then the ``TC_ACT_UNSPEC`` program return code will
+continue execution with the next tc BPF program in that list. However, this
+has the drawback that several programs would need to parse the packet over
+and over again resulting in degraded performance.
+
+**BPF program return codes**
+
+Both the tc ingress and egress hook share the same action return verdicts
+that tc BPF programs can use. They are defined in the ``linux/pkt_cls.h``
+system header:
+
+::
+
+    #define TC_ACT_UNSPEC         (-1)
+    #define TC_ACT_OK               0
+    #define TC_ACT_SHOT             2
+    #define TC_ACT_STOLEN           4
+    #define TC_ACT_REDIRECT         7
+
+There are a few more action ``TC_ACT_*`` verdicts available in the system
+header file which are also used in the two hooks. However, they share the
+same semantics with the ones above. Meaning, from a tc BPF perspective,
+``TC_ACT_OK`` and ``TC_ACT_RECLASSIFY`` have the same semantics, as well as
+the three ``TC_ACT_STOLEN``, ``TC_ACT_QUEUED`` and ``TC_ACT_TRAP`` opcodes.
+Therefore, for these cases we only describe ``TC_ACT_OK`` and the ``TC_ACT_STOLEN``
+opcode for the two groups.
+
+Starting out with ``TC_ACT_UNSPEC``. It has the meaning of "unspecified action"
+and is used in three cases, i) when an offloaded tc BPF program is attached
+and the tc ingress hook is run where the ``cls_bpf`` representation for the
+offloaded program will return ``TC_ACT_UNSPEC``, ii) in order to continue
+with the next tc BPF program in ``cls_bpf`` for the multi-program case. The
+latter also works in combination with offloaded tc BPF programs from point i)
+where the ``TC_ACT_UNSPEC`` from there continues with a next tc BPF program
+solely running in non-offloaded case. Last but not least, iii) ``TC_ACT_UNSPEC``
+is also used for the single program case to simply tell the kernel to continue
+with the ``skb`` without additional side-effects. ``TC_ACT_UNSPEC`` is very
+similar to the ``TC_ACT_OK`` action code in the sense that both pass the
+``skb`` onwards either to upper layers of the stack on ingress or down to
+the networking device driver for transmission on egress, respectively. The
+only difference to ``TC_ACT_OK`` is that ``TC_ACT_OK`` sets ``skb->tc_index``
+based on the classid the tc BPF program set. The latter is set out of the
+tc BPF program itself through ``skb->tc_classid`` from the BPF context.
+
+``TC_ACT_SHOT`` instructs the kernel to drop the packet, meaning, upper
+layers of the networking stack will never see the ``skb`` on ingress and
+similarly the packet will never be submitted for transmission on egress.
+``TC_ACT_SHOT`` and ``TC_ACT_STOLEN`` are both similar in nature with few
+differences: ``TC_ACT_SHOT`` will indicate to the kernel that the ``skb``
+was released through ``kfree_skb()`` and return ``NET_XMIT_DROP`` to the
+callers for immediate feedback, whereas ``TC_ACT_STOLEN`` will release
+the ``skb`` through ``consume_skb()`` and pretend to upper layers that
+the transmission was successful through ``NET_XMIT_SUCCESS``. The perf's
+drop monitor which records traces of ``kfree_skb()`` will therefore
+also not see any drop indications from ``TC_ACT_STOLEN`` since its
+semantics are such that the ``skb`` has been "consumed" or queued but
+certainly not "dropped".
+
+Last but not least the ``TC_ACT_REDIRECT`` action which is available for
+tc BPF programs as well. This allows to redirect the ``skb`` to the same
+or another's device ingress or egress path together with the ``bpf_redirect()``
+helper. Being able to inject the packet into another device's ingress or
+egress direction allows for full flexibility in packet forwarding with
+BPF. There are no requirements on the target networking device other than
+being a networking device itself, there is no need to run another instance
+of ``cls_bpf`` on the target device or other such restrictions.
+
+**tc BPF FAQ**
+
+This section contains a few miscellaneous question and answer pairs related to
+tc BPF programs that are asked from time to time.
+
+* **Question:** What about ``act_bpf`` as a tc action module, is it still relevant?
+* **Answer:** Not really. Although ``cls_bpf`` and ``act_bpf`` share the same
+  functionality for tc BPF programs, ``cls_bpf`` is more flexible since it is a
+  proper superset of ``act_bpf``. The way tc works is that tc actions need to be
+  attached to tc classifiers. In order to achieve the same flexibility as ``cls_bpf``,
+  ``act_bpf`` would need to be attached to the ``cls_matchall`` classifier. As the
+  name says, this will match on every packet in order to pass them through for attached
+  tc action processing. For ``act_bpf``, this is will result in less efficient packet
+  processing than using ``cls_bpf`` in ``direct-action`` mode directly. If ``act_bpf``
+  is used in a setting with other classifiers than ``cls_bpf`` or ``cls_matchall``
+  then this will perform even worse due to the nature of operation of tc classifiers.
+  Meaning, if classifier A has a mismatch, then the packet is passed to classifier
+  B, reparsing the packet, etc, thus in the typical case there will be linear
+  processing where the packet would need to traverse N classifiers in the worst
+  case to find a match and execute ``act_bpf`` on that. Therefore, ``act_bpf`` has
+  never been largely relevant. Additionally, ``act_bpf`` does not provide a tc
+  offloading interface either compared to ``cls_bpf``.
+
+..
+
+* **Question:** Is it recommended to use ``cls_bpf`` not in ``direct-action`` mode?
+* **Answer:** No. The answer is similar to the one above in that this is otherwise
+  unable to scale for more complex processing. tc BPF can already do everything needed
+  by itself in an efficient manner and thus there is no need for anything other than
+  ``direct-action`` mode.
+
+..
+
+* **Question:** Is there any performance difference in offloaded ``cls_bpf`` and
+  offloaded XDP?
+* **Answer:** No. Both are JITed through the same compiler in the kernel which
+  handles the offloading to the SmartNIC and the loading mechanism for both is
+  very similar as well. Thus, the BPF program gets translated into the same target
+  instruction set in order to be able to run on the NIC natively. The two tc BPF
+  and XDP BPF program types have a differing set of features, so depending on the
+  use case one might be picked over the other due to availability of certain helper
+  functions in the offload case, for example.
+
+**Use cases for tc BPF**
+
+Some of the main use cases for tc BPF programs are presented in this subsection.
+Also here, the list is non-exhaustive and given the programmability and efficiency
+of tc BPF, it can easily be tailored and integrated into orchestration systems
+in order to solve very specific use cases. While some use cases with XDP may overlap,
+tc BPF and XDP BPF are mostly complementary to each other and both can also be
+used at the same time or one over the other depending which is most suitable for a
+given problem to solve.
+
+* **Policy enforcement for containers**
+
+  One application which tc BPF programs are suitable for is to implement policy
+  enforcement, custom firewalling or similar security measures for containers or
+  pods, respectively. In the conventional case, container isolation is implemented
+  through network namespaces with veth networking devices connecting the host's
+  initial namespace with the dedicated container's namespace. Since one end of
+  the veth pair has been moved into the container's namespace whereas the other
+  end remains in the initial namespace of the host, all network traffic from the
+  container has to pass through the host-facing veth device allowing for attaching
+  tc BPF programs on the tc ingress and egress hook of the veth. Network traffic
+  going into the container will pass through the host-facing veth's tc egress
+  hook whereas network traffic coming from the container will pass through the
+  host-facing veth's tc ingress hook.
+
+  For virtual devices like veth devices XDP is unsuitable in this case since the
+  kernel operates solely on a ``skb`` here and generic XDP has a few limitations
+  where it does not operate with cloned ``skb``'s. The latter is heavily used
+  from the TCP/IP stack in order to hold data segments for retransmission where
+  the generic XDP hook would simply get bypassed instead. Moreover, generic XDP
+  needs to linearize the entire ``skb`` resulting in heavily degraded performance.
+  tc BPF on the other hand is more flexible as it specializes on the ``skb``
+  input context case and thus does not need to cope with the limitations from
+  generic XDP.
+
+..
+
+* **Forwarding and load-balancing**
+
+  The forwarding and load-balancing use case is quite similar to XDP, although
+  slightly more targeted towards east-west container workloads rather than
+  north-south traffic (though both technologies can be used in either case).
+  Since XDP is only available on ingress side, tc BPF programs allow for
+  further use cases that apply in particular on egress, for example, container
+  based traffic can already be NATed and load-balanced on the egress side
+  through BPF out of the initial namespace such that this is done transparent
+  to the container itself. Egress traffic is already based on the ``sk_buff``
+  structure due to the nature of the kernel's networking stack, so packet
+  rewrites and redirects are suitable out of tc BPF. By utilizing the
+  ``bpf_redirect()`` helper function, BPF can take over the forwarding logic
+  to push the packet either into the ingress or egress path of another networking
+  device. Thus, any bridge-like devices become unnecessary to use as well by
+  utilizing tc BPF as forwarding fabric.
+
+..
+
+* **Flow sampling, monitoring**
+
+  Like in XDP case, flow sampling and monitoring can be realized through a
+  high-performance lockless per-CPU memory mapped perf ring buffer where the
+  BPF program is able to push custom data, the full or truncated packet
+  contents, or both up to a user space application. From the tc BPF program
+  this is realized through the ``bpf_skb_event_output()`` BPF helper function
+  which has the same function signature and semantics as ``bpf_xdp_event_output()``.
+  Given tc BPF programs can be attached to ingress and egress as opposed to
+  only ingress in XDP BPF case plus the two tc hooks are at the lowest layer
+  in the (generic) networking stack, this allows for bidirectional monitoring
+  of all network traffic from a particular node. This might be somewhat related
+  to the cBPF case which tcpdump and Wireshark makes use of, though, without
+  having to clone the ``skb`` and with being a lot more flexible in terms of
+  programmability where, for example, BPF can already perform in-kernel
+  aggregation rather than pushing everything up to user space as well as
+  custom annotations for packets pushed into the ring buffer. The latter is
+  also heavily used in Cilium where packet drops can be further annotated
+  to correlate container labels and reasons for why a given packet had to
+  be dropped (such as due to policy violation) in order to provide a richer
+  context.
+
+..
+
+* **Packet scheduler pre-processing**
+
+  The ``sch_clsact``'s egress hook which is called ``sch_handle_egress()``
+  runs right before taking the kernel's qdisc root lock, thus tc BPF programs
+  can be utilized to perform all the heavy lifting packet classification
+  and mangling before the packet is transmitted into a real full blown
+  qdisc such as ``sch_htb``. This type of interaction of ``sch_clsact``
+  with a real qdisc like ``sch_htb`` coming later in the transmission phase
+  allows to reduce the lock contention on transmission since ``sch_clsact``'s
+  egress hook is executed without taking locks.
+
+..
+
+One concrete example user of tc BPF but also XDP BPF programs is Cilium.
+Cilium is open source software for transparently securing the network
+connectivity between application services deployed using Linux container
+management platforms like Docker and Kubernetes and operates at Layer 3/4
+as well as Layer 7. At the heart of Cilium operates BPF in order to
+implement the policy enforcement as well as load balancing and monitoring.
+
+* Slides: https://www.slideshare.net/ThomasGraf5/dockercon-2017-cilium-network-and-application-security-with-bpf-and-xdp
+* Video: https://youtu.be/ilKlmTDdFgk
+* Github: https://github.com/cilium/cilium
+
+**Driver support**
+
+Since tc BPF programs are triggered from the kernel's networking stack
+and not directly out of the driver, they do not require any extra driver
+modification and therefore can run on any networking device. The only
+exception listed below is for offloading tc BPF programs to the NIC.
+
+**Drivers supporting offloaded tc BPF**
+
+* **Netronome**
+
+  * nfp [2]_
+
+Note that also here examples for writing and loading tc BPF programs are
+included in the toolchain section under the respective tools.
 
 .. _bpf_users:
 
 Further Reading
 ===============
 
-Mentioned lists of projects, talks, papers, and further reading material
-are likely not complete. Thus, feel free to open pull requests to complete
-the list.
+Mentioned lists of docs, projects, talks, papers, and further reading
+material are likely not complete. Thus, feel free to open pull requests
+to complete the list.
+
+Kernel Developer FAQ
+--------------------
+
+Under ``Documentation/bpf/``, the Linux kernel provides two FAQ files that
+are mainly targeted for kernel developers involved in the BPF subsystem.
+
+* **BPF Devel FAQ:** this document provides mostly information around patch
+  submission process as well as BPF kernel tree, stable tree and bug
+  reporting workflows, questions around BPF's extensibility and interaction
+  with LLVM and more.
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/bpf/bpf_devel_QA.rst
+
+..
+
+* **BPF Design FAQ:** this document tries to answer frequently asked questions
+  around BPF design decisions related to the instruction set, verifier,
+  calling convention, JITs, etc.
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/bpf/bpf_design_QA.rst
 
 Projects using BPF
 ------------------
 
-The following list includes some open source projects making use of BPF:
+The following list includes a selection of open source projects making
+use of BPF respectively provide tooling for BPF. In this context the eBPF
+instruction set is specifically meant instead of projects utilizing the
+legacy cBPF:
 
-- BCC - tools for BPF-based Linux IO analysis, networking, monitoring, and more
-  (https://github.com/iovisor/bcc)
-- Cilium
-  (https://github.com/cilium/cilium)
-- iproute2 (ip and tc tools)
-  (https://wiki.linuxfoundation.org/networking/iproute2)
-- perf tool
-  (https://perf.wiki.kernel.org/index.php/Main_Page)
-- ply - a dynamic tracer for Linux
-  (https://wkz.github.io/ply)
-- Go bindings for creating BPF programs
-  (https://github.com/iovisor/gobpf)
-- Suricata IDS
-  (https://suricata-ids.org)
+**Tracing**
+
+* **BCC**
+
+  BCC stands for BPF Compiler Collection and its key feature is to provide
+  a set of easy to use and efficient kernel tracing utilities all based
+  upon BPF programs hooking into kernel infrastructure based upon kprobes,
+  kretprobes, tracepoints, uprobes, uretprobes as well as USDT probes. The
+  collection provides close to hundred tools targeting different layers
+  across the stack from applications, system libraries, to the various
+  different kernel subsystems in order to analyze a system's performance
+  characteristics or problems. Additionally, BCC provides an API in order
+  to be used as a library for other projects.
+
+  https://github.com/iovisor/bcc
+
+..
+
+* **bpftrace**
+
+  bpftrace is a DTrace-style dynamic tracing tool for Linux and uses LLVM
+  as a back end to compile scripts to BPF-bytecode and makes use of BCC
+  for interacting with the kernel's BPF tracing infrastructure. It provides
+  a higher-level language for implementing tracing scripts compared to
+  native BCC.
+
+  https://github.com/ajor/bpftrace
+
+..
+
+* **perf**
+
+  The perf tool which is developed by the Linux kernel community as
+  part of the kernel source tree provides a way to load tracing BPF
+  programs through the conventional perf record subcommand where the
+  aggregated data from BPF can be retrieved and post processed in
+  perf.data for example through perf script and other means.
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/perf
+
+..
+
+* **ply**
+
+  ply is a tracing tool that follows the 'Little Language' approach of
+  yore, and compiles ply scripts into Linux BPF programs that are attached
+  to kprobes and tracepoints in the kernel. The scripts have a C-like syntax,
+  heavily inspired by DTrace and by extension awk. ply keeps dependencies
+  to very minimum and only requires flex and bison at build time, only libc
+  at runtime.
+
+  https://github.com/wkz/ply
+
+..
+
+* **systemtap**
+
+  systemtap is a scripting language and tool for extracting, filtering and
+  summarizing data in order to diagnose and analyze performance or functional
+  problems. It comes with a BPF back end called stapbpf which translates
+  the script directly into BPF without the need of an additional compiler
+  and injects the probe into the kernel. Thus, unlike stap's kernel modules
+  this does neither have external dependencies nor requires to load kernel
+  modules.
+
+  https://sourceware.org/git/gitweb.cgi?p=systemtap.git;a=summary
+
+..
+
+* **PCP**
+
+  Performance Co-Pilot (PCP) is a system performance and analysis framework
+  which is able to collect metrics through a variety of agents as well as
+  analyze collected systems' performance metrics in real-time or by using
+  historical data. With pmdabcc, PCP has a BCC based performance metrics
+  domain agent which extracts data from the kernel via BPF and BCC.
+
+  https://github.com/performancecopilot/pcp
+
+..
+
+* **Weave Scope**
+
+  Weave Scope is a cloud monitoring tool collecting data about processes,
+  networking connections or other system data by making use of BPF in combination
+  with kprobes. Weave Scope works on top of the gobpf library in order to load
+  BPF ELF files into the kernel, and comes with a tcptracer-bpf tool which
+  monitors connect, accept and close calls in order to trace TCP events.
+
+  https://github.com/weaveworks/scope
+
+..
+
+**Networking**
+
+* **Cilium**
+
+  Cilium provides and transparently secures network connectivity and load-balancing
+  between application workloads such as application containers or processes. Cilium
+  operates at Layer 3/4 to provide traditional networking and security services
+  as well as Layer 7 to protect and secure use of modern application protocols
+  such as HTTP, gRPC and Kafka. It is integrated into orchestration frameworks
+  such as Kubernetes and Mesos, and BPF is the foundational part of Cilium that
+  operates in the kernel's networking data path.
+
+  https://github.com/cilium/cilium
+
+..
+
+* **Suricata**
+
+  Suricata is a network IDS, IPS and NSM engine, and utilizes BPF as well as XDP
+  in three different areas, that is, as BPF filter in order to process or bypass
+  certain packets, as a BPF based load balancer in order to allow for programmable
+  load balancing and for XDP to implement a bypass or dropping mechanism at high
+  packet rates.
+
+  http://suricata.readthedocs.io/en/latest/capture-hardware/ebpf-xdp.html
+
+  https://github.com/OISF/suricata
+
+..
+
+* **systemd**
+
+  systemd allows for IPv4/v6 accounting as well as implementing network access
+  control for its systemd units based on BPF's cgroup ingress and egress hooks.
+  Accounting is based on packets / bytes, and ACLs can be specified as address
+  prefixes for allow / deny rules. More information can be found at:
+
+  http://0pointer.net/blog/ip-accounting-and-access-lists-with-systemd.html
+
+  https://github.com/systemd/systemd
+
+..
+
+* **iproute2**
+
+  iproute2 offers the ability to load BPF programs as LLVM generated ELF files
+  into the kernel. iproute2 supports both, XDP BPF programs as well as tc BPF
+  programs through a common BPF loader backend. The tc and ip command line
+  utilities enable loader and introspection functionality for the user.
+
+  https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/
+
+..
+
+* **p4c-xdp**
+
+  p4c-xdp presents a P4 compiler backend targeting BPF and XDP. P4 is a domain
+  specific language describing how packets are processed by the data plane of
+  a programmable network element such as NICs, appliances or switches, and with
+  the help of p4c-xdp P4 programs can be translated into BPF C programs which
+  can be compiled by clang / LLVM and loaded as BPF programs into the kernel
+  at XDP layer for high performance packet processing.
+
+  https://github.com/vmware/p4c-xdp
+
+..
+
+**Others**
+
+* **LLVM**
+
+  clang / LLVM provides the BPF back end in order to compile C BPF programs
+  into BPF instructions contained in ELF files. The LLVM BPF back end is
+  developed alongside with the BPF core infrastructure in the Linux kernel
+  and maintained by the same community. clang / LLVM is a key part in the
+  toolchain for developing BPF programs.
+
+  https://llvm.org/
+
+..
+
+* **libbpf**
+
+  libbpf is a generic BPF library which is developed by the Linux kernel
+  community as part of the kernel source tree and allows for loading and
+  attaching BPF programs from LLVM generated ELF files into the kernel.
+  The library is used by other kernel projects such as perf and bpftool.
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/lib/bpf
+
+..
+
+* **bpftool**
+
+  bpftool is the main tool for introspecting and debugging BPF programs
+  and BPF maps, and like libbpf is developed by the Linux kernel community.
+  It allows for dumping all active BPF programs and maps in the system,
+  dumping and disassembling BPF or JITed BPF instructions from a program
+  as well as dumping and manipulating BPF maps in the system. bpftool
+  supports interaction with the BPF filesystem, loading various program
+  types from an object file into the kernel and much more.
+
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/bpf/bpftool
+
+..
+
+* **gobpf**
+
+  gobpf provides go bindings for the bcc framework as well as low-level routines in
+  order to load and use BPF programs from ELF files.
+
+  https://github.com/iovisor/gobpf
+
+..
+
+* **ebpf_asm**
+
+  ebpf_asm provides an assembler for BPF programs written in an Intel-like assembly
+  syntax, and therefore offers an alternative for writing BPF programs directly in
+  assembly for cases where programs are rather small and simple without needing the
+  clang / LLVM toolchain.
+
+  https://github.com/solarflarecom/ebpf_asm
+
+..
 
 XDP Newbies
 -----------
@@ -2269,34 +4224,13 @@ various parts of XDP and BPF:
 BPF Newsletter
 --------------
 
-Alexander Alemayhu initiated a newsletter around BPF that appears roughly once
-per week covering latest developments around BPF in Linux kernel land and its
-surrounding ecosystem in user space:
+Alexander Alemayhu initiated a newsletter around BPF roughly once per week
+covering latest developments around BPF in Linux kernel land and its
+surrounding ecosystem in user space.
 
-5. May 2017,
-     BPF Updates 05,
-     Alexander Alemayhu,
-     https://www.cilium.io/blog/2017/5/31/bpf-updates-05
+All BPF update newsletters (01 - 12) can be found here:
 
-4. May 2017,
-     BPF Updates 04,
-     Alexander Alemayhu,
-     https://www.cilium.io/blog/2017/5/24/bpf-updates-04
-
-3. May 2017,
-     BPF Updates 03,
-     Alexander Alemayhu,
-     https://www.cilium.io/blog/2017/5/17/bpf-updates-03
-
-2. May 2017,
-     BPF Updates 02,
-     Alexander Alemayhu,
-     https://www.cilium.io/blog/2017/5/10/bpf-updates-02
-
-1. May 2017,
-     BPF Updates 01,
-     Alexander Alemayhu,
-     https://www.cilium.io/blog/2017/5/2/bpf-updates-01-2017-05-02
+     https://cilium.io/blog/categories/BPF%20Newsletter
 
 Podcasts
 --------
@@ -2800,6 +4734,7 @@ Further Documents
 - Dive into BPF: a list of reading material,
   Quentin Monnet
   (https://qmonnet.github.io/whirl-offload/2016/09/01/dive-into-bpf/)
+
 - XDP - eXpress Data Path,
   Jesper Dangaard Brouer
   (https://prototype-kernel.readthedocs.io/en/latest/networking/XDP/index.html)
