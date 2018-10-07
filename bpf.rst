@@ -1581,34 +1581,35 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
   패킷이 ``em1`` 장치를 통과 하자마자 BPF map의 카운터가 증가합니다.
 
-3. **There are no global variables allowed.**
+3. **허용되는 전역 변수가 없습니다.**
 
-  For the reasons already mentioned in point 1, BPF cannot have global variables
-  as often used in normal C programs.
+  섹션 1번에서 언급 한 이유로 BPF는 일반적인 C 프로그램에서 자주 사용되는
+  전역 변수를 가질 수 없습니다.
 
-  However, there is a work-around in that the program can simply use a BPF map
-  of type ``BPF_MAP_TYPE_PERCPU_ARRAY`` with just a single slot of arbitrary
-  value size. This works, because during execution, BPF programs are guaranteed
-  to never get preempted by the kernel and therefore can use the single map entry
-  as a scratch buffer for temporary data, for example, to extend beyond the stack
-  limitation. This also functions across tail calls, since it has the same
-  guarantees with regards to preemption.
+  그러나 프로그램에서 단순히 ``BPF_MAP_TYPE_PERCPU_ARRAY`` 타입의 BPF 맵
+  을 임의의 값 크기의 단일 슬롯과 함께 사용할 수 있다는 해결 방법이 있습
+  니다.이것은 실행 중에 BPF 프로그램이 결코 커널에 의해 선점되지 않도록
+  보장되므로 단일 맵 항목을 임시 데이터를 위한 스크래치 버퍼로 사용할
+  수 있으며,  예를 들어서, 스택 제한 범위를 넘어서는 확장 입니다. 이것
+  은 또한 선점과 관련하여 동일한 보장이 있기 때문에,  tail 호출을 건
+  너서 동작 합니다.
 
-  Otherwise, for holding state across multiple BPF program runs, normal BPF
-  maps can be used.
+  그렇지 않으면 여러 BPF 프로그램 실행에서 상태를 유지하기 위해 정상적인
+  BPF 맵을 사용할 수 있습니다.
 
-4. **There are no const strings or arrays allowed.**
+4. **const 문자열이나 배열이 허용되지 않습니다.**
 
-  Defining ``const`` strings or other arrays in the BPF C program does not work
-  for the same reasons as pointed out in sections 1 and 3, which is, that relocation
-  entries will be generated in the ELF file which will be rejected by loaders due
-  to not being part of the ABI towards loaders (loaders also cannot fix up such
-  entries as it would require large rewrites of the already compiled BPF sequence).
+  BPF C 프로그램에서 ``const`` 문자열 이나 다른 배열을 정의하는 것은
+  섹션 1과 3에서 지적한 내용과 같이 즉, 로더쪽으로 ABI의 일부가 아니
+  기 때문에 로더가 거부하는 ELF 파일에 재배치 항목이 생성 되는 이유로
+  동작 하지 않습니다. (로더는 이미 컴파일 된 BPF 순서를 다시 작성
+  해야하므로 이러한 항목을 수정할 수 없습니다).
 
-  In the future, LLVM might detect these occurrences and early throw an error
-  to the user.
+  앞으로 LLVM은 이러한 발생을 감지하고 사용자에게 오류를 일찍 알수
+  있습니다.
 
-  Helper functions such as ``trace_printk()`` can be worked around as follows:
+  ``trace_printk()`` 과 같은 helper 함수는 다음과 같이 처리 할 수 있습
+  니다:
 
   ::
 
@@ -1622,32 +1623,31 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
         })
     #endif
 
-  The program can then use the macro naturally like ``printk("skb len:%u\n", skb->len);``.
-  The output will then be written to the trace pipe. ``tc exec bpf dbg`` can be
-  used to retrieve the messages from there.
+  그런 다음 프로그램은 ``printk("skb len:%u\n", skb->len);`` 와 같이 자연
+  스럽게 매크로를 사용할 수 있습니다. 그러면 출력이 추적 파이프에 기록됩
+  니다. ``tc exec bpf dbg`` 를 사용하여 거기에서 메시지를 검색 할 수 있
+  습니다.
 
-  The use of the ``trace_printk()`` helper function has a couple of disadvantages
-  and thus is not recommended for production usage. Constant strings like the
-  ``"skb len:%u\n"`` need to be loaded into the BPF stack each time the helper
-  function is called, but also BPF helper functions are limited to a maximum
-  of 5 arguments. This leaves room for only 3 additional variables which can be
-  passed for dumping.
+  ``trace_printk()`` helper 함수의 사용에는 몇 가지 단점이 있으므로 프로덕션
+  용도로 권장되지 않습니다. helper 함수가 호출 될 때마다 ``"skb len:%u\n"``
+  과 같은 상수 문자열을 BPF 스택에 로드 해야 하지만 BPF helper 함수는 최대
+  5 개의 인수로 제한됩니다.이것은 dumping을 위해 전달 될 수 있는 추가
+  변수 3 개만 남겨 둡니다.
 
-  Therefore, despite being helpful for quick debugging, it is recommended (for networking
-  programs) to use the ``skb_event_output()`` or the ``xdp_event_output()`` helper,
-  respectively. They allow for passing custom structs from the BPF program to
-  the perf event ring buffer along with an optional packet sample. For example,
-  Cilium's monitor makes use of these helpers in order to implement a debugging
-  framework, notifications for network policy violations, etc. These helpers pass
-  the data through a lockless memory mapped per-CPU ``perf`` ring buffer, and
-  is thus significantly faster than ``trace_printk()``.
+  따라서 빠른 디버깅에 도움이 되지만 네트워킹 프로그램에서 ``skb_event_output()``
+  또는 ``xdp_event_output()`` helper 함수를 사용 하는 것이 좋습니다. BPF 프로그램
+  의 사용자 지정 구조체를 선택적 패킷 샘플과 함께 ``perf`` 이벤트 링 버퍼로 전달할
+  수 있습니다. 예를 들어, Cilium의 모니터는 디버깅 프레임 워크, 네트워크 정책
+  위반에 대한 알림 등을 구현하기 위해 이 helper 함수 를 사용합니다.이러한 helper
+  함수들은 잠금없는 메모리 매핑 된 CPU 당 성능 링 버퍼를 통해 데이터를 전달 하므로
+  ``trace_printk()`` 보다 훨씬 빠릅니다.
 
-5. **Use of LLVM built-in functions for memset()/memcpy()/memmove()/memcmp().**
+5. **memset()/memcpy()/memmove()/memcmp()에 LLVM 내장 함수를 사용합니다.**
 
-  Since BPF programs cannot perform any function calls other than those to BPF
-  helpers, common library code needs to be implemented as inline functions. In
-  addition, also LLVM provides some built-ins that the programs can use for
-  constant sizes (here: ``n``) which will then always get inlined:
+  BPF 프로그램은 BPF helper 가 아닌 다른 함수 호출을 수행 할 수 없기 때문에 공용
+  라이브러리 코드를 인라인 함수로 구현해야합니다. 또한 LLVM은 프로그램이 일정한
+  크기(여기서는 ``n`` )로 사용할 수있는 내장 함수를 제공 라며, 이 함수는 항상
+  인라인 됩니다:
 
   ::
 
@@ -1663,19 +1663,18 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
     # define memmove(dest, src, n)  __builtin_memmove((dest), (src), (n))
     #endif
 
-  The ``memcmp()`` built-in had some corner cases where inlining did not take place
-  due to an LLVM issue in the back end, and is therefore not recommended to be
-  used until the issue is fixed.
+  ``memcmp()`` 내장함수는 백엔드에서 LLVM 문제로 인해 인라인이 발생하지 않는
+  일부 특수한 사례가 있으므로 문제가 해결 될 때까지는 사용하지 않는 것이
+  좋습니다.
 
-6. **There are no loops available (yet).**
+6. **사용할 수 있는 루프가 없습니다(미완성).**
 
-  The BPF verifier in the kernel checks that a BPF program does not contain
-  loops by performing a depth first search of all possible program paths besides
-  other control flow graph validations. The purpose is to make sure that the
-  program is always guaranteed to terminate.
+  커널의 BPF verifier는 BPF 프로그램이 다른 제어 흐름 그래프 검증 외에 가능한
+  모든 프로그램 경로의 깊이 우선 검색을 수행하여 루프를 포함하고 있지 않은지
+  확인합니다.목적은 프로그램이 항상 종료되도록 보장하는 것입니다.
 
-  A very limited form of looping is available for constant upper loop bounds
-  by using ``#pragma unroll`` directive. Example code that is compiled to BPF:
+  ``#pragma unroll`` 지시문을 사용하여 상한 루프 경계에서 매우 제한된 루핑
+  형식을 사용할 수 있습니다. BPF로 컴파일 된 예제 코드:
 
   ::
 
@@ -1705,22 +1704,21 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
             }
         }
 
-  Another possibility is to use tail calls by calling into the same program
-  again and using a ``BPF_MAP_TYPE_PERCPU_ARRAY`` map for having a local
-  scratch space. While being dynamic, this form of looping however is limited
-  to a maximum of 32 iterations.
+  또 다른 가능성은 같은 프로그램에 다시 호출하고 로컬 스크래치 공간을 갖는
+  ``BPF_MAP_TYPE_PERCPU_ARRAY`` 맵을 사용하여 tail 호출을 사용하는 것입니
+  다. 동적 인 반면,이 루핑 형식은 최대 32 회 반복으로 제한됩니다.
 
-  In the future, BPF may have some native, but limited form of implementing loops.
+  앞으로 BPF는 네이티브이지만 제한된 형태의 구현 루프를 가질 수 있습니다.
 
-7. **Partitioning programs with tail calls.**
+7. **tail 호출로 프로그램 분할.**
 
-  Tail calls provide the flexibility to atomically alter program behavior during
-  runtime by jumping from one BPF program into another. In order to select the
-  next program, tail calls make use of program array maps (``BPF_MAP_TYPE_PROG_ARRAY``),
-  and pass the map as well as the index to the next program to jump to. There is no
-  return to the old program after the jump has been performed, and in case there was
-  no program present at the given map index, then execution continues on the original
-  program.
+  tail call은 하나의 BPF 프로그램에서 다른 BPF 프로그램으로 점프하여 런타임
+  중에 프로그램 동작을 atomically으로 변경할 수있는 유연성을 제공합니다.
+  다음 프로그램을 선택하기 위해 tail call은 프로그램 배열 map
+  (``BPF_MAP_TYPE_PROG_ARRAY``)을 사용하고 map뿐만 아니라 다음 프로그램에게
+  인덱스를 다음 프로그램으로 점프 되도록 인덱스를 전달 합니다. 점프가 수행
+  된 이후에는 이전 프로그램으로 리턴되지 않으며 주어진 map 인덱스에 프로그램
+  이 없는 경우 처음 수행한 프로그램에서 실행을 계속됩니다.
 
   For example, this can be used to implement various stages of a parser, where
   such stages could be updated with new parsing features during runtime.
