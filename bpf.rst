@@ -1378,32 +1378,32 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
   iproute2와 같은 BPF ELF 로더가 해석 할 수 없으며, 따라서 BPF 맵만이 로더가
   처리 할 수있는 유효한 재배치 엔트리이기 때문에 오류가 발생합니다.
 
-   ::
+  ::
 
-    #include <linux/bpf.h>
+   #include <linux/bpf.h>
 
-    #ifndef __section
-    # define __section(NAME)                  \
+   #ifndef __section
+   # define __section(NAME)                  \
        __attribute__((section(NAME), used))
-    #endif
+   #endif
 
-    #ifndef __inline
-    # define __inline                         \
+   #ifndef __inline
+   # define __inline                         \
        inline __attribute__((always_inline))
-    #endif
+   #endif
 
-    static __inline int foo(void)
-    {
-        return XDP_DROP;
-    }
+   static __inline int foo(void)
+   {
+       return XDP_DROP;
+   }
 
-    __section("prog")
-    int xdp_drop(struct xdp_md *ctx)
-    {
-        return foo();
-    }
+   __section("prog")
+   int xdp_drop(struct xdp_md *ctx)
+   {
+       return foo();
+   }
 
-    char __license[] __section("license") = "GPL";
+   char __license[] __section("license") = "GPL";
 
 2. **여러 프로그램은 서로 다른 섹션의 단일 C 파일 내에 상주 할 수 있습니다.**
 
