@@ -1360,23 +1360,23 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 1. **모든 것이 인라인 될 필요가 있으며, 함수 콜 (구 LLVM 버전에서)이나 공유
    라이브러리 호출이 없습니다.**
 
-   공유 라이브러리 등은 BPF와 함께 사용할 수 없습니다. 그러나 BPF 프로그램에서
-   사용되는 공통 라이브러리 코드는 헤더 파일에 배치되고 주 프로그램에 포함될 수
-   있습니다. 예를 들어, Cilium은 이것을 많이 사용합니다 (``bpf/lib/`` 참조).
-   그러나 이것은 여전히 헤더 파일을 포함 할 수 있으며, 예를 들어 커널이나
-   다른 라이브러리에서 가져 와서 정적 인라인 함수 나 매크로 / 정의를 재사용
-   할 수 있습니다.
+  공유 라이브러리 등은 BPF와 함께 사용할 수 없습니다. 그러나 BPF 프로그램에서
+  사용되는 공통 라이브러리 코드는 헤더 파일에 배치되고 주 프로그램에 포함될 수
+  있습니다. 예를 들어, Cilium은 이것을 많이 사용합니다 (``bpf/lib/`` 참조).
+  그러나 이것은 여전히 헤더 파일을 포함 할 수 있으며, 예를 들어 커널이나
+  다른 라이브러리에서 가져 와서 정적 인라인 함수 나 매크로 / 정의를 재사용
+  할 수 있습니다.
 
-   BPF에서 BPF 함수 호출이 지원되는 최신 커널 (4.16+)과 LLVM (6.0+)이 사용하지
-   않는 경우에 LLVM은 전체 코드를 컴파일하고 주어진 프로그램 섹션에 대한 BPF
-   명령어의 flat sequence로 인라인 해야합니다. 이 경우 아래에 표시된 것처럼
-   모든 라이브러리 함수에 대해 ``__inline`` 과 같은 주석을 사용하는 것이 가장
-   좋습니다. ``always_inline`` 을 사용하는 것이 추천하며, 컴파일러는 여전히
-   ``inline`` 으로 주석 처리 된 큰 함수의 uninline 할 수 있기 때문입니다.
+  BPF에서 BPF 함수 호출이 지원되는 최신 커널 (4.16+)과 LLVM (6.0+)이 사용하지
+  않는 경우에 LLVM은 전체 코드를 컴파일하고 주어진 프로그램 섹션에 대한 BPF
+  명령어의 flat sequence로 인라인 해야합니다. 이 경우 아래에 표시된 것처럼
+  모든 라이브러리 함수에 대해 ``__inline`` 과 같은 주석을 사용하는 것이 가장
+  좋습니다. ``always_inline`` 을 사용하는 것이 추천하며, 컴파일러는 여전히
+  ``inline`` 으로 주석 처리 된 큰 함수의 uninline 할 수 있기 때문입니다.
 
-   후자가 발생하면 LLVM은 ELF 파일로 재배치 엔트리를 생성하며, 이 엔트리는
-   iproute2와 같은 BPF ELF 로더가 해석 할 수 없으며, 따라서 BPF 맵만이 로더가
-   처리 할 수있는 유효한 재배치 엔트리이기 때문에 오류가 발생합니다.
+  후자가 발생하면 LLVM은 ELF 파일로 재배치 엔트리를 생성하며, 이 엔트리는
+  iproute2와 같은 BPF ELF 로더가 해석 할 수 없으며, 따라서 BPF 맵만이 로더가
+  처리 할 수있는 유효한 재배치 엔트리이기 때문에 오류가 발생합니다.
 
    ::
 
@@ -1407,14 +1407,14 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
 2. **여러 프로그램은 서로 다른 섹션의 단일 C 파일 내에 상주 할 수 있습니다.**
 
-   BPF 용 C 프로그램은 섹션 주석을 많이 사용합니다. C 파일은 일반적으로 3 개 이상의
-   섹션으로 구성됩니다.BPF ELF 로더는 이 이름들을 사용하여 bpf 시스템 콜을 통해 프로
-   그램 과 맵을 로드하기 위해 관련 정보를 추출하고 준비합니다. 예를 들어, iproute2는
-   ``map`` 과 ``'license`` 를 기본 섹션 이름으로 사용하여 맵 작성에 필요한 메타 데이
-   터와 BPF 프로그램에 대한 라이센스를 각각 찾습니다.프로그램 생성시 마지막에 커널에
-   푸시가 되며, 프로그램이 GPL호환 라이센스를 보유한 경우에만 GPL로 노출되는 일부
-   Helper 기능 들이 활성화 되며,예를 들어 ``bpf_ktime_get_ns()``, ``bfp_probe_read()``
-   및 기타가 해당이 됩니다.
+   BPF 용 C 프로그램은 섹션 주석을 많이 사용합니다. C 파일은 일반적으로 3 개
+   이상의 섹션으로 구성됩니다.BPF ELF 로더는 이 이름들을 사용하여 bpf 시스템
+   콜을 통해 프로 그램 과 맵을 로드하기 위해 관련 정보를 추출하고 준비합니다.
+   예를 들어, iproute2는 ``map`` 과 ``'license`` 를 기본 섹션 이름으로 사용하
+   여 맵 작성에 필요한 메타 데이터와 BPF 프로그램에 대한 라이센스를 각각 찾습
+   니다.프로그램 생성시 마지막에 커널에 푸시가 되며, 프로그램이 GPL호환 라이센
+   스를 보유한 경우에만 GPL로 노출되는 일부 Helper 기능 들이 활성화 되며,예를
+   들어 ``bpf_ktime_get_ns()``, ``bfp_probe_read()`` 및 기타가 해당이 됩니다.
 
    C programs for BPF make heavy use of section annotations. A C file is
    typically structured into 3 or more sections. BPF ELF loaders use these
@@ -1427,16 +1427,16 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
    in case the program also holds a GPL compatible license, for example
    ``bpf_ktime_get_ns()``, ``bpf_probe_read()`` and others.
 
-   The remaining section names are specific for BPF program code, for example,
-   the below code has been modified to contain two program sections, ``ingress``
-   and ``egress``. The toy example code demonstrates that both can share a map
-   and common static inline helpers such as the ``account_data()`` function.
+   나머지 섹션 이름은 BPF 프로그램 코드이며, 예를 들어 아래 코드는 두 개의
+   프로그램 섹션 인 ``ingress`` 와 ``egress`` 를 포함하도록 수정되었습니다.
+   toy 예제 코드는 둘 다 map 와 ``account_data ()`` 함수와 같은 일반적인
+   정적 인라인  helper를 공유 할 수 있음을 보여 줍니다.
 
-   The ``xdp-example.c`` example has been modified to a ``tc-example.c``
-   example that can be loaded with tc and attached to a netdevice's ingress
-   and egress hook.  It accounts the transferred bytes into a map called
-   ``acc_map``, which has two map slots, one for traffic accounted on the
-   ingress hook, one on the egress hook.
+   ``xdp-example.c`` 예제는 tc로 로드되고 netdevice의 ingress 및 egress
+   hook에 연결될 수 있는 ``tc-example.c`` 예제로 수정되었습니다. 전송
+   된 바이트를 두 개의 map 슬롯을 가지고 있으며, 하나는 ingress hook에
+   있는 트래픽 용이고 다른 하나는 egress hook에 있는 ``acc_map`` 이라는
+   맵에 기록 됩니다.
 
    ::
 
@@ -1500,73 +1500,65 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
     char __license[] __section("license") = "GPL";
 
-  The example also demonstrates a couple of other things which are useful
-  to be aware of when developing programs. The code includes kernel headers,
-  standard C headers and an iproute2 specific header containing the
-  definition of ``struct bpf_elf_map``. iproute2 has a common BPF ELF loader
-  and as such the definition of ``struct bpf_elf_map`` is the very same for
-  XDP and tc typed programs.
+  이 예제는 또한 프로그램을 개발할 때 알아두면 유용한 몇 가지 다른 것들을
+  보여줍니다. 이 코드에는 커널 헤더, 표준 C 헤더 및 ``struct bpf_elf_map``
+  의 정의가 포함 된 iproute2 특정 헤더가 포함됩니다. iproute2는 일반적인
+  BPF ELF 로더를 가지고 있으며 그리고 그러한 ``struct bpf_elf_map`` 의
+  정의는 XDP 및 tc 형태 프로그램에 대해 매우 동일합니다.
 
-  A ``struct bpf_elf_map`` entry defines a map in the program and contains
-  all relevant information (such as key / value size, etc) needed to generate
-  a map which is used from the two BPF programs. The structure must be placed
-  into the ``maps`` section, so that the loader can find it. There can be
-  multiple map declarations of this type with different variable names, but
-  all must be annotated with ``__section("maps")``.
+  ``struct bpf_elf_map`` 항목은 프로그램에서 map을 정의하며 두 BPF 프로그
+  램에서 사용되는 map을 생성하는 데 필요한 모든 관련 정보 (예를 들어
+  키 / 값 크기 등)를 포함합니다. 구조체는 로더가 찾을 수 있도록 ``map``
+  섹션 에 배치해야 합니다. 다른 변수 이름을 가진이 타입의 map 선언이 여러
+  개있을 수 있지만, 모두 ``__section( "maps")`` 으로 주석을 추가해야 합니다.
 
-  The ``struct bpf_elf_map`` is specific to iproute2. Different BPF ELF
-  loaders can have different formats, for example, the libbpf in the kernel
-  source tree, which is mainly used by ``perf``, has a different specification.
-  iproute2 guarantees backwards compatibility for ``struct bpf_elf_map``.
-  Cilium follows the iproute2 model.
+  ``struct bpf_elf_map`` 은 iproute2에만 적용됩니다. 다른 BPF ELF 로더는
+  다른 형식을 가질 수 있으며, 예를 들어, ``perf`` 에 의해 주로 사용되는 커널
+  소스트리의 libbpf는 다른 사양을 갖습니다. iproute2는 ``struct bpf_elf_map``
+  에 대한 하위 호환성을 보장합니다. Cilium은 iproute2 모델을 따릅니다.
 
-  The example also demonstrates how BPF helper functions are mapped into
-  the C code and being used. Here, ``map_lookup_elem()`` is defined by
-  mapping this function into the ``BPF_FUNC_map_lookup_elem`` enum value
-  which is exposed as a helper in ``uapi/linux/bpf.h``. When the program is later
-  loaded into the kernel, the verifier checks whether the passed arguments
-  are of the expected type and re-points the helper call into a real
-  function call. Moreover, ``map_lookup_elem()`` also demonstrates how
-  maps can be passed to BPF helper functions. Here, ``&acc_map`` from the
-  ``maps`` section is passed as the first argument to ``map_lookup_elem()``.
+  이 예제는 또한 BPF helper 함수가 C 코드로 매핑되고 사용되는 방법을
+  보여줍니다.여기에서 ``map_lookup_elem()`` 함수는 ``uapi/linux/bpf.h``
+  에서 helper로 표시되는 ``BPF_FUNC_map_lookup_elem`` 열거 형 값에 매핑
+  하여 정의합니다.프로그램이 나중에 커널에 로드 될 때, verifier는 전달
+  된 인수가 예상되는 유형인지 확인하고 helper 호출을 실제 함수 호출로
+  재 지정합니다. 또한 ``map_lookup_elem()`` 함수는 ``map`` 를 BPF helper
+  함수에 전달하는 방법을 보여줍니다. 여기서 ``maps`` 섹션의 ``&acc_map``
+  은 ``map_lookup_elem()`` 함수의 첫 번째 인수로 전달됩니다.
 
-  Since the defined array map is global, the accounting needs to use an
-  atomic operation, which is defined as ``lock_xadd()``. LLVM maps
-  ``__sync_fetch_and_add()`` as a built-in function to the BPF atomic
-  add instruction, that is, ``BPF_STX | BPF_XADD | BPF_W`` for word sizes.
+  정의 된 배열 map이 전역 이므로, 어카운팅은 ``lock_xadd()`` 로 정의되는
+  atomic operation을 사용해야합니다. LLVM은 ``__sync_fetch_and_add()`` 를
+  내장 함수로 매핑하여 word 크기에 대해 BPF atomic add 명령어 즉
+  ``BPF_STX | BPF_XADD | BPF_W`` 를 매핑합니다.
 
-  Last but not least, the ``struct bpf_elf_map`` tells that the map is to
-  be pinned as ``PIN_GLOBAL_NS``. This means that tc will pin the map
-  into the BPF pseudo file system as a node. By default, it will be pinned
-  to ``/sys/fs/bpf/tc/globals/acc_map`` for the given example. Due to the
-  ``PIN_GLOBAL_NS``, the map will be placed under ``/sys/fs/bpf/tc/globals/``.
-  ``globals`` acts as a global namespace that spans across object files.
-  If the example used ``PIN_OBJECT_NS``, then tc would create a directory
-  that is local to the object file. For example, different C files with
-  BPF code could have the same ``acc_map`` definition as above with a
-  ``PIN_GLOBAL_NS`` pinning. In that case, the map will be shared among
-  BPF programs originating from various object files. ``PIN_NONE`` would
-  mean that the map is not placed into the BPF file system as a node,
-  and as a result will not be accessible from user space after tc quits. It
-  would also mean that tc creates two separate map instances for each
-  program, since it cannot retrieve a previously pinned map under that
-  name. The ``acc_map`` part from the mentioned path is the name of the
-  map as specified in the source code.
+  마지막으로, ``struct bpf_elf_map`` 는 map이 ``PIN_GLOBAL_NS`` 로 고정
+  되도록 나타냅니다. 즉, tc는 map을 BPF pseudo file system 에 노드 로
+  고정 합니다. 기본적으로 주어진 예제에서는 ``/sys/fs/bpf/tc/globalals/acc_map``
+  에 고정됩니다. ``PIN_GLOBAL_NS`` 로 인해 map은 ``/sys/fs/bpf/tc/globals/``
+  에 위치 하게 됩니다. ``global`` 은 개체 파일에 걸쳐있는 전역 네임 스페이스
+  역할을합니다. 예제에서 ``PIN_OBJECT_NS`` 를 사용하면 tc는 오브젝트 파일에
+  대한 로컬 디렉토리를 작성합니다. 예를 들어, BPF 코드가있는 다른 C 파일은
+  위의 ``PIN_GLOBAL_NS`` 고정과 동일한 ``acc_map`` 정의를 가질 수 있습니다.
+  이 경우 map은 다양한 오브젝트 파일에서 비롯된 BPF 프로그램 간에 공유됩니다.
+  ``PIN_NONE`` 은 map가 BPF 파일 시스템에 노드로 배치 되지 않으며, 결과적으로
+  tc가 종료 된 후 사용자 공간에서 액세스 할 수 없음을 의미합니다.또한 tc가 각
+  프로그램에 대해 두 개의 개별 맵 인스턴스를 생성 한다는 것은 해당 이름으로
+  이전에 고정 된 맵을 검색 할 수 없기 때문입니다. 언급 된 경로의 ``acc_map``
+  부분은 소스코드에 지정된 map의 이름입니다.
 
-  Thus, upon loading of the ``ingress`` program, tc will find that no such
-  map exists in the BPF file system and creates a new one. On success, the
-  map will also be pinned, so that when the ``egress`` program is loaded
-  through tc, it will find that such map already exists in the BPF file
-  system and will reuse that for the ``egress`` program. The loader also
-  makes sure in case maps exist with the same name that also their properties
-  (key / value size, etc) match.
+  따라서, ``ingress`` 프로그램을 로딩 할 때, tc는 BPF 파일 시스템에 그러한
+  맵이 존재하지 않으며 새로운 맵을 생성한다는 것을 알게 될 것입니다.성공하
+  면 map가 고정되어 ``egress`` 프로그램이 tc를 통해 로드 될 때, 해당 map이
+  BPF 파일 시스템에 이미 있음 을 알게되고 ``egress`` 프로그램에 재사용 하게
+  됩니다. 또한 로더는 맵의 속성 (키 / 값 크기 등)이 일치하는 동일한 이름의
+  map이 있는 경우에도 확인합니다.
 
-  Just like tc can retrieve the same map, also third party applications
-  can use the ``BPF_OBJ_GET`` command from the bpf system call in order
-  to create a new file descriptor pointing to the same map instance, which
-  can then be used to lookup / update / delete map elements.
+  tc가 같은 map을 검색 할 수있는 것처럼, 타사 응용 프로그램은 bpf 시스템 호출
+  에서 ``BPF_OBJ_GET`` 명령을 사용하여 동일한 맵 인스턴스를 가리키는 새 파일
+  디스크립터를 생성 할 수 있으며,이 디스크립터는 맵 요소를 검색 / 갱신 / 삭제
+  하는데 사용 될수 있습니다.
 
-  The code can be compiled and loaded via iproute2 as follows:
+  다음과 같이 코드를 컴파일하고 iproute2를 통해 로드 할 수 있습니다:
 
   ::
 
@@ -1598,8 +1590,7 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
     4 directories, 1 file
 
-  As soon as packets pass the ``em1`` device, counters from the BPF map will
-  be increased.
+  패킷이 ``em1`` 장치를 통과 하자마자 BPF map의 카운터가 증가합니다.
 
 3. **There are no global variables allowed.**
 
