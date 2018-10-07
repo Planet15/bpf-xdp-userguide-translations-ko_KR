@@ -1407,38 +1407,27 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
 2. **여러 프로그램은 서로 다른 섹션의 단일 C 파일 내에 상주 할 수 있습니다.**
 
-   BPF 용 C 프로그램은 섹션 주석을 많이 사용합니다. C 파일은 일반적으로 3 개
-   이상의 섹션으로 구성됩니다.BPF ELF 로더는 이 이름들을 사용하여 bpf 시스템
-   콜을 통해 프로 그램 과 맵을 로드하기 위해 관련 정보를 추출하고 준비합니다.
-   예를 들어, iproute2는 ``map`` 과 ``'license`` 를 기본 섹션 이름으로 사용하
-   여 맵 작성에 필요한 메타 데이터와 BPF 프로그램에 대한 라이센스를 각각 찾습
-   니다.프로그램 생성시 마지막에 커널에 푸시가 되며, 프로그램이 GPL호환 라이센
-   스를 보유한 경우에만 GPL로 노출되는 일부 Helper 기능 들이 활성화 되며,예를
-   들어 ``bpf_ktime_get_ns()``, ``bfp_probe_read()`` 및 기타가 해당이 됩니다.
+  BPF 용 C 프로그램은 섹션 주석을 많이 사용합니다. C 파일은 일반적으로 3 개
+  이상의 섹션으로 구성됩니다.BPF ELF 로더는 이 이름들을 사용하여 bpf 시스템
+  콜을 통해 프로 그램 과 맵을 로드하기 위해 관련 정보를 추출하고 준비합니다.
+  예를 들어, iproute2는 ``map`` 과 ``'license`` 를 기본 섹션 이름으로 사용하
+  여 맵 작성에 필요한 메타 데이터와 BPF 프로그램에 대한 라이센스를 각각 찾습
+  니다.프로그램 생성시 마지막에 커널에 푸시가 되며, 프로그램이 GPL호환 라이센
+  스를 보유한 경우에만 GPL로 노출되는 일부 Helper 기능 들이 활성화 되며,예를
+  들어 ``bpf_ktime_get_ns()``, ``bfp_probe_read()`` 및 기타가 해당이 됩니다.
 
-   C programs for BPF make heavy use of section annotations. A C file is
-   typically structured into 3 or more sections. BPF ELF loaders use these
-   names to extract and prepare the relevant information in order to load
-   the programs and maps through the bpf system call. For example, iproute2
-   uses ``maps`` and ``license`` as default section name to find metadata
-   needed for map creation and the license for the BPF program, respectively.
-   On program creation time the latter is pushed into the kernel as well,
-   and enables some of the helper functions which are exposed as GPL only
-   in case the program also holds a GPL compatible license, for example
-   ``bpf_ktime_get_ns()``, ``bpf_probe_read()`` and others.
+  나머지 섹션 이름은 BPF 프로그램 코드이며, 예를 들어 아래 코드는 두 개의
+  프로그램 섹션 인 ``ingress`` 와 ``egress`` 를 포함하도록 수정되었습니다.
+  toy 예제 코드는 둘 다 map 와 ``account_data ()`` 함수와 같은 일반적인
+  정적 인라인  helper를 공유 할 수 있음을 보여 줍니다.
 
-   나머지 섹션 이름은 BPF 프로그램 코드이며, 예를 들어 아래 코드는 두 개의
-   프로그램 섹션 인 ``ingress`` 와 ``egress`` 를 포함하도록 수정되었습니다.
-   toy 예제 코드는 둘 다 map 와 ``account_data ()`` 함수와 같은 일반적인
-   정적 인라인  helper를 공유 할 수 있음을 보여 줍니다.
+  ``xdp-example.c`` 예제는 tc로 로드되고 netdevice의 ingress 및 egress
+  hook에 연결될 수 있는 ``tc-example.c`` 예제로 수정되었습니다. 전송
+  된 바이트를 두 개의 map 슬롯을 가지고 있으며, 하나는 ingress hook에
+  있는 트래픽 용이고 다른 하나는 egress hook에 있는 ``acc_map`` 이라는
+  맵에 기록 됩니다.
 
-   ``xdp-example.c`` 예제는 tc로 로드되고 netdevice의 ingress 및 egress
-   hook에 연결될 수 있는 ``tc-example.c`` 예제로 수정되었습니다. 전송
-   된 바이트를 두 개의 map 슬롯을 가지고 있으며, 하나는 ingress hook에
-   있는 트래픽 용이고 다른 하나는 egress hook에 있는 ``acc_map`` 이라는
-   맵에 기록 됩니다.
-
-   ::
+  ::
 
     #include <linux/bpf.h>
     #include <linux/pkt_cls.h>
