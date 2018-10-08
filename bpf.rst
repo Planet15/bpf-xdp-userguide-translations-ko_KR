@@ -1720,27 +1720,27 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
   된 이후에는 이전 프로그램으로 리턴되지 않으며 주어진 map 인덱스에 프로그램
   이 없는 경우 처음 수행한 프로그램에서 실행을 계속됩니다.
 
-  For example, this can be used to implement various stages of a parser, where
-  such stages could be updated with new parsing features during runtime.
+  예를 들어, 이것은 파서의 다양한 단계를 구현하는 데 사용할 수 있으며, 이러
+  한 단계는 런타임 중에 새로운 구문 분석 기능으로 업데이트 될 수 있습니다.
 
-  Another use case are event notifications, for example, Cilium can opt in packet
-  drop notifications during runtime, where the ``skb_event_output()`` call is
-  located inside the tail called program. Thus, during normal operations, the
-  fall-through path will always be executed unless a program is added to the
-  related map index, where the program then prepares the metadata and triggers
-  the event notification to a user space daemon.
+  또 다른 사용 사례는 이벤트 알림 이며, 예를 들어, Cilium은 런타임 중에 패킷
+  drop 알림을 선택 할 수 있으며, ``skb_event_output()`` 함수 콜은 tail 호출된
+  프로그램 안에 위치합니다. 따라서 일반적인 동작에서는 프로그램이 관련 map 인
+  덱스에 추가되지 않으면 fall-through 경로가 항상 실행 되며, 여기에서 프로그
+  램은 메타 데이터를 준비하고 사용자 공간에 있는 데몬에 이벤트 통지를 트리거
+  합니다.
 
-  Program array maps are quite flexible, enabling also individual actions to
-  be implemented for programs located in each map index. For example, the root
-  program attached to XDP or tc could perform an initial tail call to index 0
-  of the program array map, performing traffic sampling, then jumping to index 1
-  of the program array map, where firewalling policy is applied and the packet
-  either dropped or further processed in index 2 of the program array map, where
-  it is mangled and sent out of an interface again. Jumps in the program array
-  map can, of course, be arbitrary. The kernel will eventually execute the
-  fall-through path when the maximum tail call limit has been reached.
+  프로그램 배열 map은 매우 유연하므로 각 map 인덱스에 있는 프로그램에 대해
+  개별 액션을 구현할 수 있습니다. 예를 들어서, XDP 혹은 tc에 연결된 최상위
+  프로그램은 프로그램 배열 맵의 인덱스 0에서 초기 tail 호출을 수행하여,
+  트래픽 샘플링을 수행 한 다음 프로그램 배열 맵의 인덱스 1로 이동하며, 여기
+  서 방화벽 정책을 적용하며, 프로그램 맵 배열 인덱스 2에서 패킷에 대해 drop
+  또는 추후 처리중 하나를 선택하며, 여기서 패킷이 mangled 되고, 인터페이스
+  에서 다시 전동 됩니다. 물론 프로그램 배열 맵의 점프는 임의적 일 수 있습
+  니다. 최대 taill call 제한에 도달하면 커널은 결국 fall-through path 를
+  실행합니다.
 
-  Minimal example extract of using tail calls:
+  tail 호출을 사용하는 최소 예제 발쵀는 아래와 같습니다:
 
   ::
 
@@ -1797,19 +1797,18 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
     char __license[] __section("license") = "GPL";
 
-  When loading this toy program, tc will create the program array and pin it
-  to the BPF file system in the global namespace under ``jmp_map``. Also, the
-  BPF ELF loader in iproute2 will also recognize sections that are marked as
-  ``__section_tail()``. The provided ``id`` in ``struct bpf_elf_map`` will be
-  matched against the id marker in the ``__section_tail()``, that is, ``JMP_MAP_ID``,
-  and the program therefore loaded at the user specified program array map index,
-  which is ``0`` in this example. As a result, all provided tail call sections
-  will be populated by the iproute2 loader to the corresponding maps. This mechanism
-  is not specific to tc, but can be applied with any other BPF program type
-  that iproute2 supports (such as XDP, lwt).
+  이 toy 프로그램을 로드 할 때, tc는 프로그램 배열을 생성하고 ``jmp_map``
+  아래의 전역 네임 스페이스의 BPF 파일 시스템에 고정 시킵니다. 또한
+  iproute2의 BPF ELF 로더는 ``__section_tail()`` 으로 표시 된 섹션을 인식
+  합니다. ``struct bpf_elf_map`` 의 제공된 ``id`` 는 ``__section_tail()``
+  의 id 마커, 즉 ``JMP_MAP_ID`` 와 일치하므로 프로그램은 사용자 지정 프로
+  그램 배열 map 인덱스 (이 예제에서는 ``0`` )에서 로드 됩니다. 결과적으로
+  제공된 모든 tail call 섹션은 iproute2 로더에 의해 해당 맵에 채워 집니다.
+  이 메커니즘은 tc에만 해당되는 것이 아니라 iproute2가 지원하는 다른 BPF
+  프로그램 유형(예 :XDP, lwt)에도 적용 할수 있습니다.
 
-  The generated elf contains section headers describing the map id and the
-  entry within that map:
+  생성 된 elf에는 map ID와 해당 map 내의 항목을 설명하는 섹션 헤더가 있습
+  니다:
 
   ::
 
@@ -1841,39 +1840,39 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
            6:       r0 = 0
            7:       exi
 
-  In this case, the ``section 1/0`` indicates that the ``looper()`` function
-  resides in the map id ``1`` at position ``0``.
+  이 경우 ``section 1/0`` 은 ``looper()`` 함수 가 ``0`` 위치의 map ID ``1``
+  에 상주 함을 나타냅니다.
 
-  The pinned map can be retrieved by a user space applications (e.g. Cilium daemon),
-  but also by tc itself in order to update the map with new programs. Updates
-  happen atomically, the initial entry programs that are triggered first from the
-  various subsystems are also updated atomically.
+  고정 된 map은 새로운 프로그램으로 맵을 업데이트하기 위해 사용자 공간
+  애플리케이션(예 : Cilium 데몬)에 의해 검색 될뿐만 아니라 tc 자체에 의해
+  검색 될 수 있습니다. 업데이트는 atomically 으로 발생하며, 다양한 하위
+  시스템에서 처음 트리거되는 초기 엔트리 프로그램도 자동 업데이트 됩니다.
 
-  Example for tc to perform tail call map updates:
+  tail call map 업데이트를 수행하는 tc의 예:
 
   ::
 
     # tc exec bpf graft m:globals/jmp_map key 0 obj new.o sec foo
 
-  In case iproute2 would update the pinned program array, the ``graft`` command
-  can be used. By pointing it to ``globals/jmp_map``, tc will update the
-  map at index / key ``0`` with a new program residing in the object file ``new.o``
-  under section ``foo``.
+  iproute2가 고정 된 프로그램 배열을 갱신 할 경우, ``graft`` 명령을 사용할
+  수 있습니다. ``globals/jmp_map`` 을 가리키면 tc는 인덱스/키 ``0`` 의 맵을
+  ``foo`` 섹션 아래 ``new.o`` 오브젝트 파일에 있는 새 프로그램으로 갱신합니
+  다.
 
-8. **Limited stack space of maximum 512 bytes.**
+8. **최대 512 바이트의 제한된 스택 공간.**
 
-  Stack space in BPF programs is limited to only 512 bytes, which needs to be
-  taken into careful consideration when implementing BPF programs in C. However,
-  as mentioned earlier in point 3, a ``BPF_MAP_TYPE_PERCPU_ARRAY`` map with a
-  single entry can be used in order to enlarge scratch buffer space.
+  BPF 프로그램의 스택 공간은 512 바이트로 제한되어 있으므로 C로 BPF 프로그
+  램을 구현할 때는 신중하게 고려해야합니다. 그러나 앞의 3 번 항목에서 설명
+  한 것처럼 스크래치 버퍼 공간을 확장하기 위해 단일 항목이있는
+  ``BPF_MAP_TYPE_PERCPU_ARRAY`` 맵을 사용할 수 있습니다.
 
-9. **Use of BPF inline assembly possible.**
+9. **BPF 인라인 어셈블리를 사용할 수 있습니다.**
 
-  LLVM also allows to use inline assembly for BPF for the rare cases where it
-  might be needed. The following (nonsense) toy example shows a 64 bit atomic
-  add. Due to lack of documentation, LLVM source code in ``lib/Target/BPF/BPFInstrInfo.td``
-  as well as ``test/CodeGen/BPF/`` might be helpful for providing some additional
-  examples. Test code:
+  또한 LLVM은 필요할 수있는 드문 경우를 위해 BPF 용 인라인 어셈블리를 사용
+  할 수 있습니다. 다음 (말도 안되는) toy 예제는 64 비트 atomic 추가를 보여
+  줍니다. 문서가 없기 때문에 ``lib/Target/BPF/BPFInstrInfo.td`` 및
+  ``test/CodeGen/BPF/`` 에있는 LLVM 소스 코드가 몇 가지 추가 예제를 제공하
+  는 데 도움이 될 수 있습니다. 테스트 코드:
 
   ::
 
@@ -1895,8 +1894,7 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 
     char __license[] __section("license") = "GPL";
 
-  The above program is compiled into the following sequence of BPF
-  instructions:
+  위의 프로그램은 다음과 같은 BPF 명령어 순서로 컴파일 됩니다:
 
   ::
 
@@ -1915,33 +1913,32 @@ BPF를 위한 C 프로그램을 작성 할때, C를 사용하여 일반적인 �
 iproute2
 --------
 
-There are various front ends for loading BPF programs into the kernel such as bcc,
-perf, iproute2 and others. The Linux kernel source tree also provides a user space
-library under ``tools/lib/bpf/``, which is mainly used and driven by perf for
-loading BPF tracing programs into the kernel. However, the library itself is
-generic and not limited to perf only. bcc is a toolkit providing many useful
-BPF programs mainly for tracing that are loaded ad-hoc through a Python interface
-embedding the BPF C code. Syntax and semantics for implementing BPF programs
-slightly differ among front ends in general, though. Additionally, there are also
-BPF samples in the kernel source tree (``samples/bpf/``) which parse the generated
-object files and load the code directly through the system call interface.
+bcc, perf, iproute2 및 기타와 같은 BPF 프로그램을 커널에 로드 하기위한 다양
+한 프런트 엔드가 있습니다. Linux 커널 소스 트리는 ``tools/lib/bpf/`` 디렉토
+리 아래에 사용자 공간 라이브러리를 제공하는데, 이는 주로 BPF 추적 프로그램
+을 커널에 로드하기 위해 perf에 의해 사용됩니다. 그러나 라이브러리 자체는
+범용이며 perf에만 제한되지 않습니다. bcc는 BPF C 코드가 내장 된 Python 인터
+페이스를 통해 ad-hoc으로 로드 되는 많은 유용한 BPF 프로그램을 주로 제공하는
+툴킷 입니다. BPF 프로그램을 구현하기위한 구문 및 의미는 일반적으로 프론트
+엔드간에 약간 다릅니다. 게다가, 생성된 오브젝트 파일을 구문 분석 하고 코드
+를 시스템 콜 인터페이스에 직접 로드 하는 BPF 샘플 코드들이 커널 소스 트리
+``samples/bpf/`` 아래에 있습니다.
 
-This and previous sections mainly focus on the iproute2 suite's BPF front end for
-loading networking programs of XDP, tc or lwt type, since Cilium's programs are
-implemented against this BPF loader. In future, Cilium will be equipped with a
-native BPF loader, but programs will still be compatible to be loaded through
-iproute2 suite in order to facilitate development and debugging.
+Cilium 프로그램은 주로 BPF 로더에 대해 구현 되므로,현재 세션 및 이전 섹션은
+주로 XDP, tc 또는 lwt 유형의 네트워킹 프로그램을 로드 하기 위한 iproute2
+제품군의 BPF 프런트 엔드에 중점을 둡니다. 앞으로 Cilium에는 기본 BPF 로더가
+갖추어져 있지만, 개발 및 디버깅을 용이하게 하기 위해 프로그램은 iproute2
+제품군을 통해 로드 될 수 있도록 여전히 호환됩니다.
 
-All BPF program types supported by iproute2 share the same BPF loader logic
-due to having a common loader back end implemented as a library (``lib/bpf.c``
-in iproute2 source tree).
+iproute2가 지원하는 모든 BPF 프로그램 타입은 공통 로더 백엔드를 라이브러리
+(iproute2 소스 트리의 ``lib/bpf.c``)로 구현 하므로 동일한 BPF 로더 로직을
+공유 합니다.
 
-The previous section on LLVM also covered some iproute2 parts related to writing
-BPF C programs, and later sections in this document are related to tc and XDP
-specific aspects when writing programs. Therefore, this section will rather focus
-on usage examples for loading object files with iproute2 as well as some of the
-generic mechanics of the loader. It does not try to provide a complete coverage
-of all details, but enough for getting started.
+LLVM의 이전 섹션에서는 BPF C 프로그램 작성과 관련된 일부 iproute2 부분을
+다루었으며, 이 문서의 뒷부분은 프로그램 작성시 tc 및 XDP 특정 측면과 관련
+이 있습니다. 따라서 현재 섹션에서는 로더의 일반 메커니즘 뿐만 아니라
+iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥니다. 모든 세부
+사항을 완벽하게 다루지는 않지만 시작하기에 충분합니다.
 
 **1. Loading of XDP BPF object files.**
 
