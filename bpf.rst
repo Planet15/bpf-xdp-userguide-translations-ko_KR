@@ -1940,20 +1940,20 @@ LLVM의 이전 섹션에서는 BPF C 프로그램 작성과 관련된 일부 ipr
 iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥니다. 모든 세부
 사항을 완벽하게 다루지는 않지만 시작하기에 충분합니다.
 
-**1. Loading of XDP BPF object files.**
+**1. XDP BPF 객체 파일 로드.**
 
-  Given a BPF object file ``prog.o`` has been compiled for XDP, it can be loaded
-  through ``ip`` to a XDP-supported netdevice called ``em1`` with the following
-  command:
+
+  BPF 객체 파일 ``prog.o`` 가 XDP 용으로 컴파일 된 경우, 다음 명령을
+  사용하여 ``em1`` 이라는 XDP 지원 netdevice에 ``ip`` 명령어를 통해 로드
+  할 수 있습니다:
 
   ::
 
     # ip link set dev em1 xdp obj prog.o
 
-  The above command assumes that the program code resides in the default section
-  which is called ``prog`` in XDP case. Should this not be the case, and the
-  section is named differently, for example, ``foobar``, then the program needs
-  to be loaded as:
+  위의 명령은 프로그램 코드가 XDP의 경우 ``prog`` 라고하는 기본 섹션에
+  있다고 가정합니다. 이런 경우가 아니고 섹션의 이름이 다르게 지정되면
+  (예 : ``foobar``) 프로그램을 다음과 같이 로드 해야 합니다:
 
   ::
 
@@ -1985,79 +1985,77 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
 
     # ip link set dev em1 xdp obj prog.o sec .text
 
-  By default, ``ip`` will throw an error in case a XDP program is already attached
-  to the networking interface, to prevent it from being overridden by accident. In
-  order to replace the currently running XDP program with a new one, the ``-force``
-  option must be used:
+  네트워크 인터페이스에 XDP 프로그램이 이미 연결되어 있어 실수로 덮어 쓰지
+  않도록 기본적으로 ``ip`` 명령어는 오류를 발생 시킵니다. 현재 실행중인
+  XDP 프로그램을 새 프로그램으로 바꾸려면 ``-force`` 옵션을 사용해야
+  합니다:
 
   ::
 
     # ip -force link set dev em1 xdp obj prog.o
 
-  Most XDP-enabled drivers today support an atomic replacement of the existing
-  program with a new one without traffic interruption. There is always only a
-  single program attached to an XDP-enabled driver due to performance reasons,
-  hence a chain of programs is not supported. However, as described in the
-  previous section, partitioning of programs can be performed through tail
-  calls to achieve a similar use case when necessary.
+  오늘날 대부분의 XDP 지원 드라이버는 트래픽 중단 없이 기존 프로그램을
+  새로운 것으로 대체합니다. 여기에는 성능상의 이유로 XDP 지원 드라이버에
+  연결된 단일 프로그램 만 있으므로 프로그램 체인이 지원되지 않습니다.
+  그러나 이전 섹션에서 설명한 것처럼 필요한 경우 유사한 사례를 얻기 위해
+  tail 호출을 통해 프로그램을 나뉠 수 있습니다.
 
-  The ``ip link`` command will display an ``xdp`` flag if the interface has an XDP
-  program attached. ``ip link | grep xdp`` can thus be used to find all interfaces
-  that have XDP running. Further introspection facilities are provided through
-  the detailed view with ``ip -d link`` and ``bpftool`` can be used to retrieve
-  information about the attached program based on the BPF program ID shown in
-  the ``ip link`` dump.
+  인터페이스에 XDP 프로그램이 연결되어 있으면 ``ip link`` 명령에 ``xdp``
+  플래그가 표시됩니다. 따라서 ``"ip link | grep xdp"`` 를 사용하여 XDP가
+  실행되는 모든 인터페이스를 찾을 수 있습니다. ``ip link`` 덤프에 표시된
+  BPF 프로그램 ID를 기반으로 연결된 프로그램에 대한 정보를 검색하는 데
+  ``ip -d`` 링크가있는 자세히 보기를 통해 추가 자가 검사 기능이 제공 되며
+  ``bpftool`` 을 사용하여 이 정보를 검색 할 수 있습니다.
 
-  In order to remove the existing XDP program from the interface, the following
-  command must be issued:
+  인터페이스에서 기존 XDP 프로그램을 제거하려면 다음 명령을 실행해야합
+  니다:
 
   ::
 
     # ip link set dev em1 xdp off
 
-  In the case of switching a driver's operation mode from non-XDP to native XDP
-  and vice versa, typically the driver needs to reconfigure its receive (and
-  transmit) rings in order to ensure received packet are set up linearly
-  within a single page for BPF to read and write into. However, once completed,
-  then most drivers only need to perform an atomic replacement of the program
-  itself when a BPF program is requested to be swapped.
+  드라이버의 동작 방식을 non-XDP에서 네이티브 XDP로 또는 그 반대로 전환
+  하는 경우, 일반적으로 드라이버는 수신 된 패킷이 BPF가 읽고 쓸 수있는
+  단일 페이지 내에서 선형적으로 설정되도록 수신(및 전송) 링을 재구성해
+  야합니다. 그러나, 일단 완료되면, 대부분의 드라이버는 BPF 프로그램을
+  스왑 하도록 요청할 때 프로그램 자체의 atomic 교체를 수행하면 됩니다.
 
-  In total, XDP supports three operation modes which iproute2 implements as well:
-  ``xdpdrv``, ``xdpoffload`` and ``xdpgeneric``.
+  전체적으로 XDP는 iproute2가 구현하는 세 가지 작동 방식을 지원 합니다
+  : ``xdpdrv``, ``xdpoffload``, 그리고 ``xdpgeneric``.
 
-  ``xdpdrv`` stands for native XDP, meaning the BPF program is run directly in
-  the driver's receive path at the earliest possible point in software. This is
-  the normal / conventional XDP mode and requires driver's to implement XDP
-  support, which all major 10G/40G/+ networking drivers in the upstream Linux
-  kernel already provide.
+  ``xdpdrv`` 는 네이티브 XDP를 의미하며,  즉, BPF 프로그램은 소프트웨어
+  의 가능한 가장 빠른 시점에 드라이버의 수신 경로에서 직접 실행됩니다.
+  이것은 일반 / 일반 XDP 방식이며, XDP 지원을 구현 하는 데 드라이버가
+  필요하며, 업스트림 리눅스 커널의 모든 주요 10G/40G/+ 네트워킹 드라
+  이버가 이미 제공합니다.
 
-  ``xdpgeneric`` stands for generic XDP and is intended as an experimental test
-  bed for drivers which do not yet support native XDP. Given the generic XDP hook
-  in the ingress path comes at a much later point in time when the packet already
-  enters the stack's main receive path as a ``skb``, the performance is significantly
-  less than with processing in ``xdpdrv`` mode. ``xdpgeneric`` therefore is for
-  the most part only interesting for experimenting, less for production environments.
+  ``xdpgeneric`` 은 일반 XDP를 나타내며 아직 네이티브 XDP를 지원하지
+  않는 드라이버를 위한 실험용 테스트 베드로 사용됩니다.진입 경로의
+  일반적인 XDP hook이 패킷이 이미 스택의 메인 수신 경로인 ``skb``
+  로 들어 가는 훨씬 늦은 시점에 제공되며, ``xdpdrv`` 방식에서 처리
+  하는 것보다 성능이 훨씬 낮습니다.그러므로 ``xdpgeneric`` 은 대부분
+  실험적인 측면에서만 흥미롭우며 실제 운영 환경 에서는 사용이 작습
+  니다.
 
-  Last but not least, the ``xdpoffload`` mode is implemented by SmartNICs such
-  as those supported by Netronome's nfp driver and allow for offloading the entire
-  BPF/XDP program into hardware, thus the program is run on each packet reception
-  directly on the card. This provides even higher performance than running in
-  native XDP although not all BPF map types or BPF helper functions are available
-  for use compared to native XDP. The BPF verifier will reject the program in
-  such case and report to the user what is unsupported. Other than staying in
-  the realm of supported BPF features and helper functions, no special precautions
-  have to be taken when writing BPF C programs.
+  마지막으로, ``xdpoffload`` 모드는 Netronome의 nfp 드라이버가 지원
+  하는 SmartNIC에서 구현되며 전체 BPF/XDP 프로그램을 하드웨어로 오프
+  로드 할 수 있으므로 프로그램은 카드의 각 패킷 수신시 직접 실행됩니다.
+  네이티브 XDP 와 비교하여 모든 BPF map 유형 또는 BPF helper 함수를
+  사용할 수 있는 것은 아니지만 네이티브 XDP에서 실행하는 것보다 훨씬
+  높은 성능을 제공합니다. 이 경우 BPF verifier는 프로그램을 거부하고
+  그리고 지원되지 않는 것을 사용자에게 보고합니다. 지원되는 BPF 기능
+  및 도우미 기능의 영역에 머무르는 것 외에 BPF C 프로그램을 작성할
+  때는 특별한 주의를 기울이 지 않아도됩니다
 
-  When a command like ``ip link set dev em1 xdp obj [...]`` is used, then the
-  kernel will attempt to load the program first as native XDP, and in case the
-  driver does not support native XDP, it will automatically fall back to generic
-  XDP. Thus, for example, using explicitly ``xdpdrv`` instead of ``xdp``, the
-  kernel will only attempt to load the program as native XDP and fail in case
-  the driver does not support it, which provides a guarantee that generic XDP
-  is avoided altogether.
+  ``ip link set dev em1 xdp obj [...]`` 와 같은 명령이 사용되면 커널
+  은 먼저 프로그램을 기본 XDP로 로드 하려고 시도하고 그리고 드라이버가
+  네이티브 XDP를 지원하지 않으면 자동으로 일반 XDP로 되돌아갑니다.
+  따라서 예를 들어 ``xdp`` 대신 명시적으로 ``xdpdrv`` 를 사용하면 커널
+  은 프로그램을 raw XDP로 로드 하려고 시도하고 드라이버가 지원하지 않는
+  경우 실패 하여 일반 XDP가 모두 회피 되는 보장을 제공 합니다.
 
-  Example for enforcing a BPF/XDP program to be loaded in native XDP mode,
-  dumping the link details and unloading the program again:
+  네이티브 XDP 방식에서 로드 할 BPF/XDP 프로그램 실행, 링크 세부 정보
+  덤프 및 프로그램 언로드 예제:
 
   ::
 
@@ -2070,9 +2068,9 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
      [...]
      # ip link set dev em1 xdpdrv off
 
-  Same example now for forcing generic XDP, even if the driver would support
-  native XDP, and additionally dumping the BPF instructions of the attached
-  dummy program through bpftool:
+  드라이버가 기본 XDP를 지원하고 bpftool을 통해 삽입된 더미 프로그램의
+  BPF 명령어를 추가로 덤프하는 경우에도 일반 XDP를 강제 실행하는 것과
+  같은 예제가 있습니다:
 
   ::
 
@@ -2081,15 +2079,15 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     [...]
     6: em1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdpgeneric qdisc mq state UP mode DORMANT group default qlen 1000
         link/ether be:08:4d:b6:85:65 brd ff:ff:ff:ff:ff:ff
-        prog/xdp id 4 tag 57cd311f2e27366b                <-- BPF program ID 4
+        prog/xdp id 4 tag 57cd311f2e27366b                <-- BPF 프로그램 ID 4
     [...]
-    # bpftool prog dump xlated id 4                       <-- Dump of instructions running on em1
+    # bpftool prog dump xlated id 4                       <-- em1에서 실행중인 명령어 덤프
     0: (b7) r0 = 1
     1: (95) exit
     # ip link set dev em1 xdpgeneric off
 
-  And last but not least offloaded XDP, where we additionally dump program
-  information via bpftool for retrieving general metadata:
+  마지막이긴 하나 중요한 오프로드 된 XDP는 일반 메타 데이터 검색을 위해
+  bpftool을 통해 프로그램 정보를 추가로 덤프합니다:
 
   ::
 
@@ -2101,18 +2099,16 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
          prog/xdp id 8 tag 57cd311f2e27366b
      [...]
      # bpftool prog show id 8
-     8: xdp  tag 57cd311f2e27366b dev em1                  <-- Also indicates a BPF program offloaded to em1
+     8: xdp  tag 57cd311f2e27366b dev em1                  <-- 또한 em1에 오프로드 된 BPF 프로그램을 나타냅니다
          loaded_at Apr 11/20:38  uid 0
          xlated 16B  not jited  memlock 4096B
      # ip link set dev em1 xdpoffload off
 
-  Note that it is not possible to use ``xdpdrv`` and ``xdpgeneric`` or other
-  modes at the same time, meaning only one of the XDP operation modes must be
-  picked.
+  ``xdpdrv`` 와 ``xdpgeneric`` 또는 다른 방식를 동시에 사용할 수는 없으며,
+  이는 XDP 동작 방식 중 하나만 선택해야 함을 의미합니다.
 
-  A switch between different XDP modes e.g. from generic to native or vice
-  versa is not atomically possible. Only switching programs within a specific
-  operation mode is:
+  다른 XDP 모드 간의 전환은 예를 들어 generic에서 native로 또는 그 반대
+  로도 atomically으로 가능하지 않습니다:
 
   ::
 
@@ -2121,11 +2117,11 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
      RTNETLINK answers: File exists
      # ip -force link set dev em1 xdpdrv obj prog.o
      RTNETLINK answers: File exists
-     # ip -force link set dev em1 xdpgeneric obj prog.o    <-- Succeeds due to xdpgeneric
+     # ip -force link set dev em1 xdpgeneric obj prog.o    <-- xdpgeneric로 인해 성공
      #
 
-  Switching between modes requires to first leave the current operation mode
-  in order to then enter the new one:
+  방식을 전환하려면 먼저 현재 작동 모드를 종료 한 후 새로운 방식으로 전환
+  해야합니다:
 
   ::
 
