@@ -2136,50 +2136,53 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
      [...]
      # ip -force link set dev em1 xdpoffload off
 
-**2. Loading of tc BPF object files.**
+**2. tc BPF 오브젝트 파일의 로딩.**
 
-  Given a BPF object file ``prog.o`` has been compiled for tc, it can be loaded
-  through the tc command to a netdevice. Unlike XDP, there is no driver dependency
-  for supporting attaching BPF programs to the device. Here, the netdevice is called
-  ``em1``, and with the following command the program can be attached to the networking
-  ``ingress`` path of ``em1``:
+  ``prog.o`` 가 tc 용으로 컴파일 된 BPF 오브젝트 파일이 고려될때, tc 명령을
+  통해 netdevice에 로드 할 수 있습니다. XDP와 달리 장치에 BPF 프로그램을
+  연결하는 데 필요한 드라이버 의존성이 없습니다. 여기서 netdevice는 ``em1``
+  이라고하며 다음 명령을 사용하여 프로그램을 em1의 네트워킹 ``ingress``
+  경로에 연결할 수 있습니다:
 
   ::
 
     # tc qdisc add dev em1 clsact
     # tc filter add dev em1 ingress bpf da obj prog.o
 
-  The first step is to set up a ``clsact`` qdisc (Linux queueing discipline). ``clsact``
-  is a dummy qdisc similar to the ``ingress`` qdisc, which can only hold classifier
-  and actions, but does not perform actual queueing. It is needed in order to attach
-  the ``bpf`` classifier. The ``clsact`` qdisc provides two special hooks called
-  ``ingress`` and ``egress``, where the classifier can be attached to. Both ``ingress``
-  and ``egress`` hooks are located in central receive and transmit locations in the
-  networking data path, where every packet on the device passes through. The ``ingress``
-  hook is called from ``__netif_receive_skb_core() -> sch_handle_ingress()`` in the
-  kernel and the ``egress`` hook from ``__dev_queue_xmit() -> sch_handle_egress()``.
+  첫 번째 단계는 ``clsact`` qdisc (리눅스 대기 행렬의 규칙)를 설정하는
+  것입니다. ``clsact`` 는 ``ingress`` qdisc와 비슷한 더미 qdisc이며,
+  classifier 및 action 만 보유 할 수 있지만 실제 대기열을 작동 하지는
+  않습니다. ``bpf`` classifier를 연결하기 위해 필요합니다. ``clsact``
+  qdisc는 ``ingress`` 및 ``egress`` 라고 하는 두 개의  특수 hook를 제공
+  하며, 이 hook는 classifier를 연결할 수 있습니다. ``ingress`` 및
+  ``egress`` hook은 장치의 모든 패킷이 통과하는 네트워킹 데이터 경로의
+  중심 수신 및 전송 위치에 있습니다. ``ingress`` hook은 커널의 함수의
+  ``__netif_receive_skb_core () -> sch_handle_ingress ()`` 호출되며,
+  ``egress`` hook은 ``__dev_queue_xmit () -> sch_handle_egress ()``
+  에서 호출됩니다.
 
-  The equivalent for attaching the program to the ``egress`` hook looks as follows:
+  ``egress`` hook에 프로그램을 연결하는 것에 해당하는 것은 다음과 같
+  습니다:
 
   ::
 
     # tc filter add dev em1 egress bpf da obj prog.o
 
-  The ``clsact`` qdisc is processed lockless from ``ingress`` and ``egress``
-  direction and can also be attached to virtual, queue-less devices such as
-  ``veth`` devices connecting containers.
+  ``clsact`` qdisc는 ``ingress`` 및 ``egress`` 방향에서 lockless로 처리
+  되며, 컨테이너를 연결하는 ``veth`` 장치와 같은 가상, 대기열없는 장치
+  에도 연결할 수 있습니다.
 
-  Next to the hook, the ``tc filter`` command selects ``bpf`` to be used in ``da``
-  (direct-action) mode. ``da`` mode is recommended and should always be specified.
-  It basically means that the ``bpf`` classifier does not need to call into external
-  tc action modules, which are not necessary for ``bpf`` anyway, since all packet
-  mangling, forwarding or other kind of actions can already be performed inside
-  the single BPF program which is to be attached, and is therefore significantly
-  faster.
+  hook 다음에, ``tc filter`` 명령은 ``da`` (direct-action mode)
+  방식에서 사용 할 ``bpf`` 를 선택합니다. ``da`` mode가 권장이 되며
+  그리고 항상 명시 해야 합니다. 기본적으로 ``bpf`` classifier는 모든
+  패킷 mangling 및 포워딩 또는 다른 동작이 이미 single bpf 프로그램
+  내부에 서 수행 될 수 있기 때문에 ``bpf`` 필요하지 않은 외부 tc
+  action 모듈을 호출 할 필요가 없다는 것을 의미하며, 연결이 될때
+  상당히 빨라 집니다.
 
-  At this point, the program has been attached and is executed once packets traverse
-  the device. Like in XDP, should the default section name not be used, then it
-  can be specified during load, for example, in case of section ``foobar``:
+  이 시점에서 프로그램이 연결되어 패킷이 장치를 통과하면 프로그램이 실행
+  됩니다. XDP처럼, 기본 섹션 이름을 사용하지 않으면 로드 중에 ``foobar``
+  섹션과 같이 지정할 수 있습니다:
 
   ::
 
