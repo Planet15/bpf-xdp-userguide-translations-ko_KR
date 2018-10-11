@@ -2188,11 +2188,11 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
 
     # tc filter add dev em1 egress bpf da obj prog.o sec foobar
 
-  iproute2's BPF loader allows for using the same command line syntax across
-  program types, hence the ``obj prog.o sec foobar`` is the same syntax as with
-  XDP mentioned earlier.
+  iproute2의 BPF 로더는 프로그램 타입에 따라 동일한 명령 행 구문을 사용
+  할 수 있으므로 ``obj prog.o sec foobar`` 는 앞에서 언급 한 XDP와 같은
+  구문입니다.
 
-  The attached programs can be listed through the following commands:
+  연결 된 프로그램은 다음 명령을 통해 나열 될 수 있습니다:
 
   ::
 
@@ -2204,34 +2204,35 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     filter protocol all pref 49152 bpf
     filter protocol all pref 49152 bpf handle 0x1 prog.o:[egress] direct-action id 2 tag b2fd5adc0f262714
 
-  The output of ``prog.o:[ingress]`` tells that program section ``ingress`` was
-  loaded from the file ``prog.o``, and ``bpf`` operates in ``direct-action`` mode.
-  The program ``id`` and ``tag`` is appended for each case, where the latter denotes
-  a hash over the instruction stream which can be correlated with the object file
-  or ``perf`` reports with stack traces, etc. Last but not least, the ``id``
-  represents the system-wide unique BPF program identifier that can be used along
-  with ``bpftool`` to further inspect or dump the attached BPF program.
+  ``prog.o : [ingress]`` 의 출력은 프로그램 섹션 ``ingress`` 가 ``prog.o``
+  파일에서 로드 되었으며, ``bpf`` 가 직접-실행(direct-action mode) 방식
+  에서 동작 하는 것을 나타냅니다.프로그램 ``id`` 및 ``tag`` 는 각각 값
+  이며, 마지막 명령어 스트림에 대한 hash 나타내며, 오브젝트 파일 혹은
+  stack trace가 있는 ``perf`` reports 등과 같은 관련을 될수 있습니다.
+  마지막이긴 하나 중요한 id는 ``bpftool`` 과 함께 사용하여 첨부 된 BPF
+  프로그램을 추가로 검사하거나 덤프 할 수있는 시스템 전체의 고유 한 BPF
+  프로그램 식별자를 나타냅니다.
 
-  tc can attach more than just a single BPF program, it provides various other
-  classifiers which can be chained together. However, attaching a single BPF program
-  is fully sufficient since all packet operations can be contained in the program
-  itself thanks to ``da`` (``direct-action``) mode, meaning the BPF program itself
-  will already return the tc action verdict such as ``TC_ACT_OK``, ``TC_ACT_SHOT``
-  and others. For optimal performance and flexibility, this is the recommended usage.
+  tc는 단 하나의 BPF 프로그램 이상을 연결 할 수 있으며, tc는 함께 chained
+  할 수 있는 다양한 다른 classifier들을 제공합니다.하지만, BPF 프로그램
+  자체가 이미 ``TC_ACT_OK``, ``TC_ACT_SHOT`` 및 기타와 같은 tc 작업 결정을
+  반환한다는 것을 의미하는 ``da`` (직접-실행, ``direct-action`` )방식 덕분
+  에 모든 패킷 조작이 프로그램 자체에 포함될 수 있기 때문에 단일 BPF 프로그
+  램을 연결 만으로 충분합니다. 최적의 성능과 유연성을 위해 권장되는
+  사용법 입니다.
 
-  In the above ``show`` command, tc also displays ``pref 49152`` and
-  ``handle 0x1`` next to the BPF related output. Both are auto-generated in
-  case they are not explicitly provided through the command line. ``pref``
-  denotes a priority number, which means that in case multiple classifiers are
-  attached, they will be executed based on ascending priority, and ``handle``
-  represents an identifier in case multiple instances of the same classifier have
-  been loaded under the same ``pref``. Since in case of BPF, a single program is
-  fully sufficient, ``pref`` and ``handle`` can typically be ignored.
+  위의 ``show`` 명령에서 tc는 BPF 관련 출력 옆에 ``pref 49152`` 및 ``handle 0x1``
+  도 표시합니다. 둘 다 명령 줄을 통해 명시적으로 제공되지 않는 경우 자동
+  생성됩니다. ``pref`` 는 우선 순위 번호를 나타내며, 이는 다중 classifier들이
+  연결 된 경우 오름차순 우선 순위에 따라 실행되는 것을 의미하며, handle은 같은
+  classifier의 다중 인스턴스가 동일한 ``pref`` 아래 로드 된 경우 식별자를 나타
+  냅니다. BPF의 경우 하나의 프로그램으로 충분하기 때문에 일반적으로 ``pref``
+  와 ``handle`` 을 무시할 수 있습니다.
 
-  Only in the case where it is planned to atomically replace the attached BPF
-  programs, it would be recommended to explicitly specify ``pref`` and ``handle``
-  a priori on initial load, so that they do not have to be queried at a later
-  point in time for the ``replace`` operation. Thus, creation becomes:
+  연결된 BPF 프로그램들을 atomically하게 교체할 계획이 있는 경우 에만, 초기
+  로드시 연역적으로 ``pref`` 및 ``handle`` 을 명시적으로 지정하는 것을 추천하며,
+  따라서 나중에 ``replace`` 작업을 위해 따로 쿼리할 필요는 없습니다.
+  따라서 창작물은 다음과 같이 됩니다:
 
   ::
 
@@ -2241,33 +2242,32 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     filter protocol all pref 1 bpf
     filter protocol all pref 1 bpf handle 0x1 prog.o:[foobar] direct-action id 1 tag c5f7825e5dac396f
 
-  And for the atomic replacement, the following can be issued for updating the
-  existing program at ``ingress`` hook with the new BPF program from the file
-  ``prog.o`` in section ``foobar``:
+  그리고 atomic 교체을 위해 ``foobar`` 섹션의 ``prog.o`` 파일에서 새로운 BPF
+  프로그램으로 ``ingress`` hook에서 기존 프로그램을 업데이트하기 위해 다음을
+  발행 할 수 있습니다:
 
   ::
 
     # tc filter replace dev em1 ingress pref 1 handle 1 bpf da obj prog.o sec foobar
 
-  Last but not least, in order to remove all attached programs from the ``ingress``
-  respectively ``egress`` hook, the following can be used:
+  마지막으로 중요한 것은 첨부 된 각 프로그램을 ``ingress`` 및 ``egress`` hook에서
+  모두 제거하려면 다음을 사용할 수 있습니다:
 
   ::
 
     # tc filter del dev em1 ingress
     # tc filter del dev em1 egress
 
-  For removing the entire ``clsact`` qdisc from the netdevice, which implicitly also
-  removes all attached programs from the ``ingress`` and ``egress`` hooks, the
-  below command is provided:
+  netdevice에서 ``clsact`` qdisc 전체 즉 암시적으로 ``ingress`` 및 ``egress`` hook에
+  모든 연결된 프로그램을 제거하려면 다음과 같은 명령이 제공 됩니다 :
 
   ::
 
     # tc qdisc del dev em1 clsact
 
-  tc BPF programs can also be offloaded if the NIC and driver has support for it
-  similarly as with XDP BPF programs. Netronome's nfp supported NICs offer both
-  types of BPF offload.
+  tc BPF 프로그램은 만약 NIC 및 드라이버가 XDP BPF 프로그램과 유사하게 지원 되는 경
+  우 오프로드 할 수 있습니다. Netronome의 nfp 지원 NIC는 두 가지 유형의 BPF 오프로드
+  를 제공합니다.
 
   ::
 
@@ -2276,8 +2276,8 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     Error: TC offload is disabled on net device.
     We have an error talking to the kernel
 
-  If the above error is shown, then tc hardware offload first needs to be enabled
-  for the device through ethtool's ``hw-tc-offload`` setting:
+  위의 오류가 표시되면 ethtool의 ``hw-tc-offload`` 설정을 통해 장치의 tc 하드웨어
+  오프로드를 먼저 활성화 해야 합니다:
 
   ::
 
@@ -2288,19 +2288,19 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     filter protocol all pref 1 bpf
     filter protocol all pref 1 bpf handle 0x1 prog.o:[classifier] direct-action skip_sw in_hw id 19 tag 57cd311f2e27366b
 
-  The ``in_hw`` flag confirms that the program has been offloaded to the NIC.
+  ``in_hw`` 플래그는 프로그램이 NIC로 오프로드 되었음을 확인합니다.
 
-  Note that BPF offloads for both tc and XDP cannot be loaded at the same time,
-  either the tc or XDP offload option must be selected.
+  tc와 XDP의 BPF 오프로드를 동시에 로드 할 수 없으므로 tc 또는 XDP 오프로드
+  옵션을 선택해야합니다.
 
-**3. Testing BPF offload interface via netdevsim driver.**
+**3. netdevsim 드라이버를 통해 BPF 오프로드 인터페이스를 테스트 합니다.**
 
-  The netdevsim driver which is part of the Linux kernel provides a dummy driver
-  which implements offload interfaces for XDP BPF and tc BPF programs and
-  facilitates testing kernel changes or low-level user space programs
-  implementing a control plane directly against the kernel's UAPI.
+  Linux 커널의 일부인 netdevsim 드라이버는 XDP BPF 및 tc BPF 프로그램 용 오프
+  로드 인터페이스를 구현하는 더미 드라이버를 제공하며 커널의 UAPI에 대해 직접
+  control plane을 구현하는 커널 변경 또는 low-level 사용자 공간 프로그램 테스
+  트를 가능 하게합니다.
 
-  A netdevsim device can be created as follows:
+  netdevsim 장치는 다음과 같이 생성 될 수 있습니다 :
 
   ::
 
@@ -2312,8 +2312,8 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
     7: sim0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN mode DEFAULT group default qlen 1000
         link/ether a2:24:4c:1c:c2:b3 brd ff:ff:ff:ff:ff:ff
 
-  After that step, XDP BPF or tc BPF programs can be test loaded as shown
-  in the various examples earlier:
+  이 단계가 끝난 후 XDP BPF 또는 tc BPF 프로그램은 앞서 다양한 예제에 표시
+  된대로 로드 할 수 있습니다:
 
   ::
 
@@ -2324,17 +2324,17 @@ iproute2로 객체 파일을 로드하는 데 사용 예제에 초점을 맞춥�
         link/ether a2:24:4c:1c:c2:b3 brd ff:ff:ff:ff:ff:ff
         prog/xdp id 20 tag 57cd311f2e27366b
 
-These two workflows are the basic operations to load XDP BPF respectively tc BPF
-programs with iproute2.
+이 두 워크 플로는 iproute2를 사용하여 XDP BPF 및 tc BPF 프로그램을 로드하는
+기본 작업입니다.
 
-There are other various advanced options for the BPF loader that apply both to XDP
-and tc, some of them are listed here. In the examples only XDP is presented for
-simplicity.
+BPF 로더에는 XDP와 tc에 모두 적용되는 여러 가지 고급 옵션이 있으며 그 중
+일부는 여기에 나열되어 있습니다. 예제에서 XDP는 단순화를 위해 제시된 것입
+니다.
 
-**1. Verbose log output even on success.**
+**1. 성공시에도 자세한 로그 출력.**
 
-  The option ``verb`` can be appended for loading programs in order to dump the
-  verifier log, even if no error occurred:
+  오류가 발생하지 않은 경우에도 verifier 로그를 덤프하기 위해 ``verb`` 옵션
+  을 추가하여 프로그램을 로드 할 수 있습니다:
 
   ::
 
@@ -2351,30 +2351,30 @@ simplicity.
     1: (95) exit
     processed 2 insns
 
-**2. Load program that is already pinned in BPF file system.**
+**2. BPF 파일 시스템에 이미 고정되어 있는 프로그램을 로드 하십시오.**
 
-  Instead of loading a program from an object file, iproute2 can also retrieve
-  the program from the BPF file system in case some external entity pinned it
-  there and attach it to the device:
+  오브젝트 파일에서 프로그램을 로드하는 대신에, iproute2는 BPF 파일 시스템
+  에서 프로그램을 검색 할 수 있으며, 외부 엔티티가 거기에 고정시키고 장치에
+  연결하는 경우입니다:
 
   ::
 
   # ip link set dev em1 xdp pinned /sys/fs/bpf/prog
 
-  iproute2 can also use the short form that is relative to the detected mount
-  point of the BPF file system:
+  iproute2는 감지 된 BPF 파일 시스템의 마운트 지점과 관련된 짧은 형식을 사용
+  할 수도 있습니다:
 
   ::
 
   # ip link set dev em1 xdp pinned m:prog
 
-When loading BPF programs, iproute2 will automatically detect the mounted
-file system instance in order to perform pinning of nodes. In case no mounted
-BPF file system instance was found, then tc will automatically mount it
-to the default location under ``/sys/fs/bpf/``.
+BPF 프로그램을 로드 할 때, iproute2는 노드의 고정을 수행하기 위해 마운트 된
+파일 시스템 인스턴스를 자동으로 감지합니다. 마운트 된 BPF 파일 시스템 인스턴
+스가 없는 경우, tc는 이를 자동으로 ``/sys/fs/bpf/`` 아래의 기본 위치에 마운트
+합니다.
 
-In case an instance has already been found, then it will be used and no additional
-mount will be performed:
+인스턴스가 이미 발견 된 경우, 인스턴스가 사용되며 추가 마운트가 수행되지 않습
+니다:
 
   ::
 
@@ -2392,42 +2392,38 @@ mount will be performed:
 
     4 directories, 1 file
 
-By default tc will create an initial directory structure as shown above,
-where all subsystem users will point to the same location through symbolic
-links for the ``globals`` namespace, so that pinned BPF maps can be reused
-among various BPF program types in iproute2. In case the file system instance
-has already been mounted and an existing structure already exists, then tc will
-not override it. This could be the case for separating ``lwt``, ``tc`` and
-``xdp`` maps in order to not share ``globals`` among all.
+기본적으로 tc는 위와 같이 모든 서브 시스템 사용자는 ``globals`` 이름 공간에 대한
+기호 링크를 통해 동일한 위치를 가리키는 초기 디렉토리 구조를 생성하며, 고정
+된 BPF 맵을 iproute2의 다양한 BPF 프로그램 유형간에 재사용 할 수 있습니다.
+파일 시스템 인스턴스가 이미 마운트 되었고 기존 구조가 이미 존재하는 경우,
+tc는 파일 시스템 인스턴스를 오버라이드 하지 않습니다. 이는 ``globals`` 을 공유하
+지 않기 위해 ``lwt``, ``tc`` 및 ``xdp`` map을 분리하는 경우가 발생 할 수 있습니
+다.
 
-As briefly covered in the previous LLVM section, iproute2 will install a
-header file upon installation which can be included through the standard
-include path by BPF programs:
+이전 LLVM 섹션에서 간단히 설명 했듯이, iproute2는 설치 시 BPF 프로그램에 의해
+표준 include 경로를 통해 포함될 수있는 헤더 파일을 설치합니다:
 
   ::
 
     #include <iproute2/bpf_elf.h>
 
-The purpose of this header file is to provide an API for maps and default section
-names used by programs. It's a stable contract between iproute2 and BPF programs.
+이 헤더 파일의 목적은 프로그램에 사용되는 map과 기본 섹션 이름에 대한 API를 제공
+하는 것입니다. 그것은 iproute2와 BPF 프로그램 사이의 안정적인 계약입니다.
 
-The map definition for iproute2 is ``struct bpf_elf_map``. Its members have
-been covered earlier in the LLVM section of this document.
+iproute2에 대한 map 정의는 ``struct bpf_elf_map`` 입니다. 그것의 구성은 이 문서
+의 LLVM 부분에서 더 일찍 다루어졌습니다.
 
-When parsing the BPF object file, the iproute2 loader will walk through
-all ELF sections. It initially fetches ancillary sections like ``maps`` and
-``license``. For ``maps``, the ``struct bpf_elf_map`` array will be checked
-for validity and whenever needed, compatibility workarounds are performed.
-Subsequently all maps are created with the user provided information, either
-retrieved as a pinned object, or newly created and then pinned into the BPF
-file system. Next the loader will handle all program sections that contain
-ELF relocation entries for maps, meaning that BPF instructions loading
-map file descriptors into registers are rewritten so that the corresponding
-map file descriptors are encoded into the instructions immediate value, in
-order for the kernel to be able to convert them later on into map kernel
-pointers. After that all the programs themselves are created through the BPF
-system call, and tail called maps, if present, updated with the program's file
-descriptors.
+BPF 객체 파일을 구문 분석 할 때 iproute2 로더는 모든 ELF 섹션을 처리합니다.
+처음에는 ``maps`` 및 ``license`` 와 같은 보조 섹션을 가져옵니다. ``maps`` 의 경우
+``struct bpf_elf_map`` 배열의 유효성을 검사하고 필요할 때마다 호환성 우회 방법이
+수행 됩니다. 결과적으로 모든 map은 사용자가 제공 한 정보로 생성되며, 고정 된 객체
+로 검색되거나 새로 생성 된 다음 BPF 파일 시스템에 고정됩니다. 다음으로 로더는 map
+에 대한 ELF 재배치 엔트리가 포함된 프로그램 세션을 처리 하며, 이 의미는 map 파일
+디스크립터를 레지스터리에 로드하는 BPF 명령어로 다시 작성되어, 해당 map 파일 디스
+크립터가 immediate 값으로 인코딩이 되고, 이는 커널이 >나중에 커널 포인터로 변환
+할 수 있도록 하기 위해서 입니다. 이후 모든 프로그램 자체가 BPF 시스템 호출을 통
+해 생성되고 tail 호출된 map이 있는 경우, 이 프로그램의 파일 디스크립터로 업데이트
+됩니다.
 
 bpftool
 -------
