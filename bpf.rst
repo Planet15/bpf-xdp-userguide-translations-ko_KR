@@ -2428,20 +2428,19 @@ BPF 객체 파일을 구문 분석 할 때 iproute2 로더는 모든 ELF 섹션�
 bpftool
 -------
 
-bpftool is the main introspection and debugging tool around BPF and developed
-and shipped along with the Linux kernel tree under ``tools/bpf/bpftool/``.
+bpftool은 BPF 주변의 주요 자가 검사 및 디버깅 도구이며 ``tools/bpf/bpftool/``
+아래의 Linux 커널 트리와 함께 개발 및 제공됩니다.
 
-The tool can dump all BPF programs and maps that are currently loaded in
-the system, or list and correlate all BPF maps used by a specific program.
-Furthermore, it allows to dump the entire map's key / value pairs, or
-lookup, update, delete individual ones as well as retrieve a key's neighbor
-key in the map. Such operations can be performed based on BPF program or
-map IDs or by specifying the location of a BPF file system pinned program
-or map. The tool additionally also offers an option to pin maps or programs
-into the BPF file system.
+이 도구는 현재 시스템에 로드 된 모든 BPF 프로그램과 맵을 덤프하거나, 특정
+프로그램에서 사용하는 모든 BPF 맵을 나열하고 연관시킬 수 있습니다.
+또한 전체 맵의 키/값 쌍을 덤프하거나 개별 맵을 조회, 업데이트, 삭제할 수
+있을 뿐만 아니라 맵에서 키의 인접 키를 검>색 할 수 있습니다. 이러한 작업은
+BPF 프로그램 또는 맵 ID를 기반으로 수행하거나, BPF 파일 시스템 고정 프로그램
+또는 맵의 위치를 지정하여 수행 할 수 있습니다. 또한 이 도구는 map을 고정하는
+옵션 또는 프로그램을 BPF 파일 시스템에 제공합니다.
 
-For a quick overview of all BPF programs currently loaded on the host
-invoke the following command:
+현재 호스트에 로드 된 모든 BPF 프로그램의 개요 내용을 확인하려면 다음 명령을
+호출하십시오:
 
   ::
 
@@ -2460,7 +2459,7 @@ invoke the following command:
         xlated 3728B  jited 2099B  memlock 4096B  map_ids 17
      [...]
 
-Similarly, to get an overview of all active maps:
+마찬가지로 모든 활성 map의 개요를 보려면 다음을 수행하십시오:
 
   ::
 
@@ -2477,17 +2476,16 @@ Similarly, to get an overview of all active maps:
         key 20B  value 8B  max_entries 512000  memlock 49352704B
     [...]
 
-Note that for each command, bpftool also supports json based output by
-appending ``--json`` at the end of the command line. An additional
-``--pretty`` improves the output to be more human readable.
+각 명령에 대해 bpftool은 명령 줄 끝에 ``--json`` 을 추가하여 json 기반
+출력을 지원합니다. 추가적인 ``--pretty`` 는 사람이 읽을 수 있는 출력을
+향상 시킵니다.
 
   ::
 
      # bpftool prog --json --pretty
 
-For dumping the post-verifier BPF instruction image of a specific BPF
-program, one starting point could be to inspect a specific program, e.g.
-attached to the tc ingress hook:
+특정 BPF 프로그램의 verifier 후 BPF 명령어 이미지를 덤프 하는 경우,
+예를 들어 tc ingress hook에 연결된 특정 프로그램을 검사 할 수 있습니다.
 
   ::
 
@@ -2496,9 +2494,10 @@ attached to the tc ingress hook:
      filter protocol all pref 1 bpf chain 0 handle 0x1 bpf_host.o:[from-netdev] \
                          direct-action not_in_hw id 406 tag e0362f5bd9163a0a jited
 
-The program from the object file ``bpf_host.o``, section ``from-netdev`` has
-a BPF program ID of ``406`` as denoted in ``id 406``. Based on this information
-bpftool can provide some high-level metadata specific to the program:
+객체 파일 ``bpf_host.o`` 프로그램은 ``from-netdev`` 섹션에서 ``id 406``
+에 표시 된대로, 프로그램 ID ``406`` 을 가지고 있습니다. 이 정보를 바탕
+으로 bpftool은 프로그램과 관련된 몇 가지 상위 레벨 메타 데이터를 제공
+할 수 있습니다:
 
   ::
 
@@ -2507,17 +2506,17 @@ bpftool can provide some high-level metadata specific to the program:
           loaded_at Apr 09/16:24  uid 0
           xlated 11144B  jited 7721B  memlock 12288B  map_ids 18,20,8,5,6,14
 
-The program of ID 406 is of type ``sched_cls`` (``BPF_PROG_TYPE_SCHED_CLS``),
-has a ``tag`` of ``e0362f5bd9163a0a`` (sha sum over the instruction sequence),
-it was loaded by root ``uid 0`` on ``Apr 09/16:24``. The BPF instruction
-sequence is ``11,144 bytes`` long and the JITed image ``7,721 bytes``. The
-program itself (excluding maps) consumes ``12,288 bytes`` that are accounted /
-charged against user ``uid 0``. And the BPF program uses the BPF maps with
-IDs ``18``, ``20``, ``8``, ``5``, ``6`` and ``14``. The latter IDs can further
-be used to get information or dump the map themselves.
+ID 406의 프로그램은 ``sched_cls`` (``BPF_PROG_TYPE_SCHED_CLS``) 타입이며,
+``e0362f5bd9163a0a`` (명령 시퀀스에 대한 sha 합계) ``tag`` 를 가지고 있으
+며, ``Apr 09/16:24`` 에 root ``uid 0`` 에 의해 로드 되었습니다. BPF 명령
+시퀀스는 ``11,144 바이트`` 이며, 주입된 이미지는 ``7,721 바이트`` 입니다.
+프로그램 자체 (map 제외)는 사용자 ``uid 0`` 에 대해 계산된/소비된
+accounted / charged ``12,288 바이트`` 를 사용합니다. 그리고 BPF 프로그램은
+ID가 ``18``, ``20``, ``8``, ``5``, ``6`` 및 ``14`` 인 BPF 맵을 사용 합니다.
+이후의 ID는 정보를 얻거나 맵을 덤프 하는데 더 사용될 수 있습니다.
 
-Additionally, bpftool can issue a dump request of the BPF instructions the
-program runs:
+또한 bpftool은 프로그램이 실행하는 BPF 명령의 덤프 요청을 실행 할 수 있습
+니다:
 
   ::
 
@@ -2533,17 +2532,16 @@ program runs:
      50: (bf) r1 = r6
      51: (18) r2 = map[id:18]                    <-- BPF map id 18
      53: (b7) r5 = 32
-     54: (85) call bpf_skb_event_output#5656112  <-- BPF helper call
+     54: (85) call bpf_skb_event_output#5656112  <-- BPF helper 호출
      55: (69) r1 = *(u16 *)(r6 +192)
      [...]
 
-bpftool correlates BPF map IDs into the instruction stream as shown above
-as well as calls to BPF helpers or other BPF programs.
+bpftool은 BPF helper 또는 다른 BPF 프로그램에 대한 호출 뿐만 아니라 위의 그림과
+같이 BPF map ID를 명령 스트림에 상관 관계가 있습니다.
 
-The instruction dump reuses the same 'pretty-printer' as the kernel's BPF
-verifier. Since the program was JITed and therefore the actual JIT image
-that was generated out of above ``xlated`` instructions is executed, it
-can be dumped as well through bpftool:
+명령 덤프는 커널의 BPF verifier와 동일한 'pretty-printer'를 다시 사용 합니다.
+위의 ``xlated`` 명령에서 생성된 프로그램이 주입 되어 실제 JIT 이미지가 실행 되
+므로 bpftool을 통해서 덤프 될 수 있습니다:
 
   ::
 
@@ -2561,8 +2559,8 @@ can be dumped as well through bpftool:
      25:        mov    0x80(%rdi),%r9d
      [...]
 
-Mainly for BPF JIT developers, the option also exists to interleave the
-disassembly with the actual native opcodes:
+BPF JIT 개발자를 중심으로, 실제 네이티브 opcode로 디스 어셈블리를 interleave
+하는 옵션도 있습니다:
 
   ::
 
@@ -2585,8 +2583,8 @@ disassembly with the actual native opcodes:
                 4c 89 7d 18
      [...]
 
-The same interleaving can be done for the normal BPF instructions which
-can sometimes be useful for debugging in the kernel:
+커널에서 디버깅 할 때 유용 할 수있는 일반적인 BPF 명령어에 대해 동일한
+interleave을 수행 할 수 있습니다:
 
   ::
 
@@ -2605,32 +2603,30 @@ can sometimes be useful for debugging in the kernel:
          63 71 40 00 00 00 00 00
       [...]
 
-The basic blocks of a program can also be visualized with the help of
-``graphviz``. For this purpose bpftool has a ``visual`` dump mode that
-generates a dot file instead of the plain BPF ``xlated`` instruction
-dump that can later be converted to a png file:
+``graphviz`` 의 도움을 받아 프로그램의 기본 블록을 시각화 할 수도 있습
+니다. 이 목적을 위해 bpftool은 나중에 png 파일로 변환 할 수 있는 일반
+BPF ``xlated`` 명령 덤프 대신 도트 파일을 생성하는 ``visual`` 덤프 모드
+를 가지고 있습니다:
 
   ::
 
      # bpftool prog dump xlated id 406 visual &> output.dot
      $ dot -Tpng output.dot -o output.png
 
-Another option would be to pass the dot file to dotty as a viewer, that
-is ``dotty output.dot``, where the result for the ``bpf_host.o`` program
-looks as follows (small extract):
+또 다른 옵션은 dot 파일을 뷰어인 dotty로 전달 하는 것이며, 즉
+``dotty output.dot`` 하는 경우 , ``bpg_host.o`` 프로그램의 결과는 다음
+과 같습니다(작은 발췌).:
 
 .. image:: images/bpf_dot.png
     :align: center
 
-Note that the ``xlated`` instruction dump provides the post-verifier BPF
-instruction image which means that it dumps the instructions as if they
-were to be run through the BPF interpreter. In the kernel, the verifier
-performs various rewrites of the original instructions provided by the
-BPF loader.
+``xlated`` 명령어 덤프는 만약 BPF 인터프리터를 통해 실행될 경우와 같은
+명령어를 덤프한다는 의미의 verifier후 BPF 명령어 이미지를 제공합니다.
+커널에서 verifier 는 BPF 로더가 제공 한 본래 명령어의 다양한 다시 쓰기
+을 수행합니다.
 
-One example of rewrites is the inlining of helper functions in order to
-improve runtime performance, here in the case of a map lookup for hash
-tables:
+다시 쓰기의 한가지 예는 런타임 성능을 향상 시키기 위해, helper 함수의
+인라이닝 (inline) 이며, 여기 hash 테이블에 대한 map 조회 경우 입니다:
 
   ::
 
@@ -2649,20 +2645,21 @@ tables:
      12: (07) r2 += -4
      [...]
 
-bpftool correlates calls to helper functions or BPF to BPF calls through
-kallsyms. Therefore, make sure that JITed BPF programs are exposed to
-kallsyms (``bpf_jit_kallsyms``) and that kallsyms addresses are not
-obfuscated (calls are otherwise shown as ``call bpf_unspec#0``):
+bpftool은 모듈이 참조할 수 있는 커널 내부의 함수나 변수의 심볼 정보
+인 kallsyms 를 통해, helper 함수 또는 BPF 호출에서 BPF 호출에 연결
+합니다. 따라서 주입되어 BPF 프로그램이 kallsyms(``bpf_jit_kallsyms``
+파라메터를 통해)에 노출 되어 있고, kallsyms주소가 난독화되지 않는지
+확인하십시오 호출은 ``call bpf_unspec#0`` 로 표시됩니다):
 
   ::
 
      # echo 0 > /proc/sys/kernel/kptr_restrict
      # echo 1 > /proc/sys/net/core/bpf_jit_kallsyms
 
-BPF to BPF calls are correlated as well for both, interpreter as well
-as JIT case. In the latter, the tag of the subprogram is shown as
-call target. In each case, the ``pc+2`` is the pc-relative offset of
-the call target, which denotes the subprogram.
+BPF 호출에서 BPF 호출은 JIT 경우뿐만 아니라 인터프리터와 상관 관계
+가 있습니다. 뒤에서는 서브 프로그램의 태그가 호출 대상으로 표시됩
+니다. 각각의 경우, ``pc+2`` 는 호출 대상의 pc-상대 오프셋이며, 서브
+프로그램을 나타냅니다.
 
   ::
 
@@ -2673,7 +2670,7 @@ the call target, which denotes the subprogram.
      3: (b7) r0 = 2
      4: (95) exit
 
-JITed variant of the dump:
+덤프의 주입된 변형:
 
   ::
 
@@ -2684,9 +2681,8 @@ JITed variant of the dump:
      3: (b7) r0 = 2
      4: (95) exit
 
-In the case of tail calls, the kernel maps them into a single instruction
-internally, bpftool will still correlate them as a helper call for ease
-of debugging:
+tail 호출의 경우, 커널은 내부적으로 하나의 명령어로 매핑을 하며,
+bpftool은 디버깅을 쉽게하기 위해 helper 호출과 연관 시킵니다:
 
   ::
 
@@ -2707,9 +2703,8 @@ of debugging:
      1: prog_array  flags 0x0
            key 4B  value 4B  max_entries 1  memlock 4096B
 
-Dumping an entire map is possible through the ``map dump`` subcommand
-which iterates through all present map elements and dumps the key /
-value pairs.
+``map dump`` 서브 명령을 사용하여, 현재의 모든 맵 요소를 반복하고
+키 / 값 쌍으로 16진 수로 덤프하는 전체 맵을 덤프할 수 있습니다.
 
 If no BTF (BPF Type Format) data is available for a given map, then
 the key / value pairs are dumped as hex:
@@ -2819,8 +2814,8 @@ Now loading into kernel and dumping the map via bpftool:
        },{
      [...]
 
-Lookup, update, delete, and 'get next key' operations on the map for specific
-keys can be performed through bpftool as well.
+특정 키에 대한 map에서 조회, 업데이트, 삭제 및 `다음 키 얻기` 작업 은 bpftool을
+통해서도 수행 할 수 있습니다.
 
 BPF sysctls
 -----------
