@@ -2820,68 +2820,71 @@ Now loading into kernel and dumping the map via bpftool:
 BPF sysctls
 -----------
 
-The Linux kernel provides few sysctls that are BPF related and covered in this section.
+리눅스 커널에서는 몇가지 BPF와 관련된 sysctl에 대한 제공을 하며, 이 장에서는
+이 내용을 다룹니다.
 
-* ``/proc/sys/net/core/bpf_jit_enable``: Enables or disables the BPF JIT compiler.
 
-  +-------+-------------------------------------------------------------------+
-  | Value | Description                                                       |
-  +-------+-------------------------------------------------------------------+
-  | 0     | Disable the JIT and use only interpreter (kernel's default value) |
-  +-------+-------------------------------------------------------------------+
-  | 1     | Enable the JIT compiler                                           |
-  +-------+-------------------------------------------------------------------+
-  | 2     | Enable the JIT and emit debugging traces to the kernel log        |
-  +-------+-------------------------------------------------------------------+
-
-  As described in subsequent sections, ``bpf_jit_disasm`` tool can be used to
-  process debugging traces when the JIT compiler is set to debugging mode (option ``2``).
-
-* ``/proc/sys/net/core/bpf_jit_harden``: Enables or disables BPF JIT hardening.
-  Note that enabling hardening trades off performance, but can mitigate JIT spraying
-  by blinding out the BPF program's immediate values. For programs processed through
-  the interpreter, blinding of immediate values is not needed / performed.
+* ``/proc/sys/net/core/bpf_jit_enable``: BPF JIT 컴파일러를 활성화 혹은
+                                         비활성화 하도록 설정합니다.
 
   +-------+-------------------------------------------------------------------+
-  | Value | Description                                                       |
+  | 값    | 설명                                                              |
   +-------+-------------------------------------------------------------------+
-  | 0     | Disable JIT hardening (kernel's default value)                    |
+  | 0     | JIT를 비활성화 하며, 인터프리터만 사용합니다 (커널 기본값)        |
   +-------+-------------------------------------------------------------------+
-  | 1     | Enable JIT hardening for unprivileged users only                  |
+  | 1     | JIT 컴파일러를 활성화 합니다.                                     |
   +-------+-------------------------------------------------------------------+
-  | 2     | Enable JIT hardening for all users                                |
-  +-------+-------------------------------------------------------------------+
-
-* ``/proc/sys/net/core/bpf_jit_kallsyms``: Enables or disables export of JITed
-  programs as kernel symbols to ``/proc/kallsyms`` so that they can be used together
-  with ``perf`` tooling as well as making these addresses aware to the kernel for
-  stack unwinding, for example, used in dumping stack traces. The symbol names
-  contain the BPF program tag (``bpf_prog_<tag>``). If ``bpf_jit_harden`` is enabled,
-  then this feature is disabled.
-
-  +-------+-------------------------------------------------------------------+
-  | Value | Description                                                       |
-  +-------+-------------------------------------------------------------------+
-  | 0     | Disable JIT kallsyms export (kernel's default value)              |
-  +-------+-------------------------------------------------------------------+
-  | 1     | Enable JIT kallsyms export for privileged users only              |
+  | 2     | JIT를 활성화 하며,  커널 로그에 emit 디버깅 추적을 남깁니다.      |
   +-------+-------------------------------------------------------------------+
 
-* ``/proc/sys/kernel/unprivileged_bpf_disabled``: Enables or disable unprivileged
-  use of the ``bpf(2)`` system call. The Linux kernel has unprivileged use of
-  ``bpf(2)`` enabled by default, but once the switch is flipped, unprivileged use
-  will be permanently disabled until the next reboot. This sysctl knob is a one-time
-  switch, meaning if once set, then neither an application nor an admin can reset
-  the value anymore. This knob does not affect any cBPF programs such as seccomp
-  or traditional socket filters that do not use the ``bpf(2)`` system call for
-  loading the program into the kernel.
+  다음 절에서 설명하는 것 처럼, ``bpf_jit_disasm`` 도구는 JIT 컴파일러가 디버깅
+  모드 (옵션 ``2``)로 설정된 경우 디버깅 추적을 처리하는 데 사용 할 수 있습니다.
+
+* ``/proc/sys/net/core/bpf_jit_harden``: BPF JIT 하드닝를 활성화 혹은 비활성화
+  하도록 설정합니다. 하드닝 기능을 사용하면 성능이 저하되지만, BPF 프로그램의
+  즉각적인 값을 무시함으로써 JIT 스프레이 공격에 대해 완화 할 수 있습니다.
+  인터프리터를 통해 처리되는 프로그램의 경우 즉시 값의 블라인드가 필요하지 않거
+  나 수행되지 않습니다.
 
   +-------+-------------------------------------------------------------------+
-  | Value | Description                                                       |
+  | 값    | 설명                                                              |
   +-------+-------------------------------------------------------------------+
-  | 0     | Unprivileged use of bpf syscall enabled (kernel's default value)  |
+  | 0     | JIT 하드닝 비활성화 (커널의 기본값)                               |
   +-------+-------------------------------------------------------------------+
-  | 1     | Unprivileged use of bpf syscall disabled                          |
+  | 1     | 허가받은 사용자들에 대해서 JIT 하드닝 활성화                      |
+  +-------+-------------------------------------------------------------------+
+  | 2     | 모든 사용자들에 대해서 JIT 하드닝 활성화                          |
+  +-------+-------------------------------------------------------------------+
+
+* ``/proc/sys/net/core/bpf_jit_kallsyms``: 주입된 프로그램을 ``/proc/kallsyms`` 에
+  대한 커널 심볼로 내보내기를 활성화하거나 비활성화 하도록 설정하며, ``perf`` 도구
+  와 함께 사용할 수 있으며 이러한 주소가 스택 해제를 위해 커널에 인식 되며, 예를
+  들어 스택 추적을 덤프라는 데 사용됩니다. 심볼 이름에는 BPF 프로그램 태그
+  (``bpf_prog_<tag>``)가 포함됩니다. 만약 ``bpf_jit_harden`` 파라메터 값이 활성화
+  되어 있다면, 이 기능은 비활성화 됩니다.
+
+  +-------+-------------------------------------------------------------------+
+  | 값    | 설명                                                              |
+  +-------+-------------------------------------------------------------------+
+  | 0     | JIT kallsyms 내보내기 비활성화(커널 기본값)                       |
+  +-------+-------------------------------------------------------------------+
+  | 1     | 허가받은 사용자들에 대해서 JIT kallsyms 내보내기 활성화           |
+  +-------+-------------------------------------------------------------------+
+
+* ``/proc/sys/kernel/unprivileged_bpf_disabled``: ``bpf(2)`` 시스템 호출의 권한없는
+  사용을 활성화하거나 비활성화 하도록 설정합니다. Linux 커널은 기본적으로 ``bpf(2)``
+  를 사용하는 권한 없는 사용에 대해서 활성화 되어 있으며, 이 옵션이 바뀌면, 다음
+  재부팅 때까지 권한이 없는 사용이 영구적으로 비 활성화됩니다. 이 sysctl 설정은 일회성
+  스위치 이며, 즉 일단 설정되면, 응용프로그램이나 관리자가 더 이상 값을 재설정 할수
+  없습니다. 이 설정은 프로그램을 커널에 로드하기 위해 ``bpf(2)`` 시스템 호출을 사용하지
+  않는 seccomp 또는 기존 소켓 필터와 같은 cBPF 프로그램에는 영향을 주지 않습니다.
+
+  +-------+-------------------------------------------------------------------+
+  | 값    | 설명                                                              |
+  +-------+-------------------------------------------------------------------+
+  | 0     | 권한없는 bpf 시스템 호출 사용 활성화 (커널 기본값)                |
+  +-------+-------------------------------------------------------------------+
+  | 1     | 권한없는 bpf 시스템 호출 사용 비활성화                            |
   +-------+-------------------------------------------------------------------+
 
 Kernel Testing
