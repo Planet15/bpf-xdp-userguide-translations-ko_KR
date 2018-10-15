@@ -3070,11 +3070,11 @@ netdevice ``em1`` 에 연결되었습니다.
 Introspection
 -------------
 
-The Linux kernel provides various tracepoints around BPF and XDP which
-can be used for additional introspection, for example, to trace interactions
-of user space programs with the bpf system call.
+리눅스 커널은 BPF 와 XDP 주변의 다양한 tracepoint들을 제공하는데, 이는 추가적인
+introspection를 뜻하며, 예를 들어 사용자 영역 프로그램과 bpf 시스템 콜의 대화를
+추적 할 수 있습니다
 
-Tracepoints for BPF:
+BPF를 위한 추적점:
 
 ::
 
@@ -3092,8 +3092,8 @@ Tracepoints for BPF:
     bpf:bpf_prog_load                                  [Tracepoint event]
     bpf:bpf_prog_put_rcu                               [Tracepoint event]
 
-Example usage with ``perf`` (alternatively to ``sleep`` example used here,
-a specific application like ``tc`` could be used here instead, of course):
+``perf`` 를 사용한 예제 사용법(여기에 사용 된 ``sleep`` 예제 대신 ``tc``
+와 같은 특정 응용 프로그램을 사용할 수 있습니다):
 
 ::
 
@@ -3107,27 +3107,27 @@ a specific application like ``tc`` could be used here instead, of course):
     sock_example  6197 [005]   288.990868: bpf:bpf_map_lookup_elem: map type=ARRAY ufd=4 key=[01 00 00 00] val=[14 00 00 00 00 00 00 00]
          swapper     0 [005]   289.338243:    bpf:bpf_prog_put_rcu: prog=a5ea8fa30ea6849c type=SOCKET_FILTER
 
-For the BPF programs, their individual program tag is displayed.
+BPF 프로그램의 경우, 개별 프로그램 태그가 표시됩니다.
 
-For debugging, XDP also has a tracepoint that is triggered when exceptions are raised:
+디버깅을 위해 XDP에는 예외가 발생할 때 트리거되는 추적점도 있습니다:
 
 ::
 
     # perf list | grep xdp:
     xdp:xdp_exception                                  [Tracepoint event]
 
-Exceptions are triggered in the following scenarios:
+예외는 다음 시나리오에서 트리거 됩니다:
 
-* The BPF program returned an invalid / unknown XDP action code.
-* The BPF program returned with ``XDP_ABORTED`` indicating a non-graceful exit.
-* The BPF program returned with ``XDP_TX``, but there was an error on transmit,
-  for example, due to the port not being up, due to the transmit ring being full,
-  due to allocation failures, etc.
+* BPF 프로그램은 유효하지 않은/ 알 수없는 XDP 액션 코드를 반환 했습니다.
+* BPF 프로그램은 비정상 종료를 나타내는 ``XDP_ABORTED`` 를 반환 했습니다.
+* BPF 프로그램은 ``XDP_TX`` 와 함께 반환 되었지만, 예를 들어 포트가 작동
+  하지 않거나, transmit ring이 가득 차거나, 할당 실패 로 인해, 전송 시
+  오류가 발생했습니다.
 
-Both tracepoint classes can also be inspected with a BPF program itself
-attached to one or more tracepoints, collecting further information
-in a map or punting such events to a user space collector through the
-``bpf_perf_event_output()`` helper, for example.
+두개의 tracepoint class는 BPF 프로그램 자체가 하나 이상의 추적점에 연결
+되어 검사될 수 있으며, 예를 들어, ``bpf_perf_event_output()`` helper
+함수를 통해 map에 추가 정보를 수집하거나 사용자 영역 수집기에 이러한
+이벤트를 punting 할수 있습니다.
 
 Miscellaneous
 -------------
