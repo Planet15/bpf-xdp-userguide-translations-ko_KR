@@ -3132,96 +3132,92 @@ BPF 프로그램의 경우, 개별 프로그램 태그가 표시됩니다.
 Miscellaneous
 -------------
 
-BPF programs and maps are memory accounted against ``RLIMIT_MEMLOCK`` similar
-to ``perf``. The currently available size in unit of system pages which may be
-locked into memory can be inspected through ``ulimit -l``. The setrlimit system
-call man page provides further details.
+BPF 프로그램과 map는 ``RLIMIT_MEMLOCK`` 을 기준으로 한 메모리 이며,
+``perf`` 와 비슷합니다. 메모리에 잠길 수 있는 시스템 페이지 단위의
+현재 사용 가능한 크기는 ``ulimit -l`` 을 통해 검사 할 수 있습니다.
+setrlimit 시스템 콜 man 페이지는 자세한 내용을 제공합니다.
 
-The default limit is usually insufficient to load more complex programs or
-larger BPF maps, so that the BPF system call will return with ``errno``
-of ``EPERM``. In such situations a workaround with ``ulimit -l unlimited`` or
-with a sufficiently large limit could be performed. The ``RLIMIT_MEMLOCK`` is
-mainly enforcing limits for unprivileged users. Depending on the setup,
-setting a higher limit for privileged users is often acceptable.
+더 복잡한 프로그램이나 큰 BPF map을 로드하는 것에 있어서 기본 한계값
+은 충분하지 않으며, 그래서 BPF 시스템 콜은 ``EPERM`` 의 ``errno`` 를
+반환활 것 입니다. 이런 상황에서는 ``ulimit -l ulimited`` 혹은 충분히
+큰 제한 값을 수행이 될수 있습니다. ``RLMIT_MEMLOCK`` 는 주로 권한이
+없는 사용자에게 제한이 적용됩니다. 설정에 따라, 권한있는 사용자에
+대해 더 높은 제한을 설정하는 것이 종종 허용 됩니다.
 
-Program Types
+프로그램 유형
 =============
 
-At the time of this writing, there are eighteen different BPF program types
-available, two of the main types for networking are further explained in below
-subsections, namely XDP BPF programs as well as tc BPF programs. Extensive
-usage examples for the two program types for LLVM, iproute2 or other tools
-are spread throughout the toolchain section and not covered here. Instead,
-this section focuses on their architecture, concepts and use cases.
+이 글을 쓸 당시, 사용 가능한 18 가지의 다른 BPF 프로그램의 유형이 있으며,
+네트워킹을 위한 주요 유형 중 두가지는 XDP BPF 프로그램 과 tc BPF 프로그램
+에 대해 하위 세션에서 자세히 설명합니다. LLVM, iproute2 또는 기타 도구에
+대한 두 가지 프로그램 유형에 대한 광범위한 사용 예는 툴체인 섹션에 전달
+되어 있으며 여기서는 다루지 않습니다. 대신이 이 섹션에서는 아키텍처, 개념
+및 사용 사례에 중점을 둡니다.
 
 XDP
 ---
 
-XDP stands for eXpress Data Path and provides a framework for BPF that enables
-high-performance programmable packet processing in the Linux kernel. It runs
-the BPF program at the earliest possible point in software, namely at the moment
-the network driver receives the packet.
+XDP는 eXpress Data Path의 약자이며 리눅스 커널에서 고성능 프로그램 가능한
+패킷 처리를 가능하게 하는 BPF를 위한 프레임 워크를 제공합니다.XDP는 BPF
+프로그램을 소프트웨어의 가장 빠른 시점, 즉 네트워크 드라이버가 패킷을받는
+순간 실행합니다.
 
-At this point in the fast-path the driver just picked up the packet from its
-receive rings, without having done any expensive operations such as allocating
-an ``skb`` for pushing the packet further up the networking stack, without
-having pushed the packet into the GRO engine, etc. Thus, the XDP BPF program
-is executed at the earliest point when it becomes available to the CPU for
-processing.
+고속 경로의 이시점에서, 드라이버는 패킷등을
+GRO(generic receive offload)로 푸시 하지 않고, 패킷을 네트워킹 스택 보다
+더 위로 올리기 위한 ``skb`` 할당과 같은 비용이 많이 드는 작업을 수행하지
+않고, 수신 링에서 패킷을 수신합니다. 따라서, XDP BPF 프로그램은 처리를
+위해 CPU에서 사용 할수 있는 가장 빠른 시점에 실행됩니다.
 
-XDP works in concert with the Linux kernel and its infrastructure, meaning
-the kernel is not bypassed as in various networking frameworks that operate
-in user space only. Keeping the packet in kernel space has several major
-advantages:
+XDP는 리눅스 커널 및 인프라와 함께 동작 하므로, 사용자 영역에서만 작동하는
+다양한 네트워크 프레임 워크처럼 커널을 우회하는 동작을 하지 않습니다. 패킷
+을 커널 공간에 유지하면 다음과 같은 몇 가지 주요한 이점이 있습니다:
 
-* XDP is able to reuse all the upstream developed kernel networking drivers,
-  user space tooling, or even other available in-kernel infrastructure such
-  as routing tables, sockets, etc in BPF helper calls itself.
-* Residing in kernel space, XDP has the same security model as the rest of
-  the kernel for accessing hardware.
-* There is no need for crossing kernel / user space boundaries since the
-  processed packet already resides in the kernel and can therefore flexibly
-  forward packets into other in-kernel entities like namespaces used by
-  containers or the kernel's networking stack itself. This is particularly
-  relevant in times of Meltdown and Spectre.
-* Punting packets from XDP to the kernel's robust, widely used and efficient
-  TCP/IP stack is trivially possible, allows for full reuse and does not
-  require maintaining a separate TCP/IP stack as with user space frameworks.
-* The use of BPF allows for full programmability, keeping a stable ABI with
-  the same 'never-break-user-space' guarantees as with the kernel's system
-  call ABI and compared to modules it also provides safety measures thanks to
-  the BPF verifier that ensures the stability of the kernel's operation.
-* XDP trivially allows for atomically swapping programs during runtime without
-  any network traffic interruption or even kernel / system reboot.
-* XDP allows for flexible structuring of workloads integrated into
-  the kernel. For example, it can operate in "busy polling" or "interrupt
-  driven" mode. Explicitly dedicating CPUs to XDP is not required. There
-  are no special hardware requirements and it does not rely on hugepages.
-* XDP does not require any third party kernel modules or licensing. It is
-  a long-term architectural solution, a core part of the Linux kernel, and
-  developed by the kernel community.
-* XDP is already enabled and shipped everywhere with major distributions
-  running a kernel equivalent to 4.8 or higher and supports most major 10G
-  or higher networking drivers.
 
-As a framework for running BPF in the driver, XDP additionally ensures that
-packets are laid out linearly and fit into a single DMA'ed page which is
-readable and writable by the BPF program. XDP also ensures that additional
-headroom of 256 bytes is available to the program for implementing custom
-encapsulation headers with the help of the ``bpf_xdp_adjust_head()`` BPF helper
-or adding custom metadata in front of the packet through ``bpf_xdp_adjust_meta()``.
+* XDP는 BPF helper 호출 자체에서 라우팅 테이블, 소켓등과 같이 업스트립에서
+  개발된 모든 커널 드라이버, 사용자 영역 툴 또는 다른 사용 가능한 커널 내부
+  구조를 재사용 할수 있습니다.
+* 커널 공간에 존재하는 XDP는 하드웨어에 접근을 위한 커널의 나머지 부분과
+  동일한 보안 모델을 가지고 있습니다.
+* 처리 된 패킷이 이미 커널에 있기 때문에 컨테이너 혹은 커널의 네트워킹 스택
+  자체에서 사용되는 네임 스페이스와 같은 다른 커널 내부 엔터티로 패킷을
+  유연하게 전달할 수 있으므로 커널 / 사용자 영역 경계를 넘을 필요가 없습니다.
+  이것은 멜트다운과 스펙터의 시기와 관련이 있습니다.
+* XDP에서 커널의 robust로 패킷을 퍼팅(punting)하여 광범위하게 사용되는 TCP/IP
+  스택을 쉽게 사용할 수 있으며, 완전히 재사용 할 수 있으며 사용자 공간 프레임
+  워크와 별도로 TCP/IP 스택을 유지 관리 할 필요가 없습니다.
+* BPF를 이용하여 커널의 시스템 call ABI 호출하는 것과 동일한
+  'naver-break-user-space' 보장을 통해 안정적인 ABI를 유지하며, 모듈과 비교
+  하여 커널 동작의 안정성을 보장하는 BPF verifier 덕분에 안전 장치를 제공하는
+  완전한 프로그래밍 기능을 사용 할수 있습니다.
+* XDP를 사용하면 네트워크 트래픽 중단이나 커널 / 시스템 재부팅 없이 런타임에
+  프로그램을 atomically하게 스왑할 수 있습니다.
+* XDP를 사용하면 커널에 통합된 워크로드를 유연한 구조화 할 수 있습니다. 예를
+  들어, "busy polling" 또는 "interrupt driven" 모드에서 작동 할 수 있습니다.
+  명시 적으로 CPU를 XDP 전용으로 지정할 필요는 없습니다. 특별한 하드웨어 요구
+  사항은 없으며, hugepages에 의존하지 않습니다.
+* XDP에는 타사 커널 모듈이나 라이센스가 필요하지 않습니다. 이것은 장기적인
+  아키텍처 솔루션으로 리눅스 커널의 핵심 부분이며 커널 커뮤니티에 의해 개발
+  되었습니다.
+* XDP는 4.8 이상에 해당하는 커널을 실행하는 주요 배포판을 통해 모든 곳에서
+  이미 활성화되고 제공되며 대부분의 주요 10G 이상의 네트워킹 드라이버를 지원
+  합니다.
 
-The framework contains XDP action codes further described in the section
-below which a BPF program can return in order to instruct the driver how
-to proceed with the packet, and it enables the possibility to atomically
-replace BPF programs running at the XDP layer. XDP is tailored for
-high-performance by design. BPF allows to access the packet data through
-'direct packet access' which means that the program holds data pointers
-directly in registers, loads the content into registers, respectively
-writes from there into the packet.
+드라이버에서 BPF를 실행하기 위한 프레임워크로서, XDP는 패킷이 선형적으로 배치
+되어 BPF 프로그램이 읽고 쓸 수 있는 단일 DMA의 페이지에 맞도록 보장합니다.
+또한 XDP는 ``bpf_xdp_adjust_head()`` BPF helper 함수를 사용하여,
+사용자 정의 캡슐화 헤더를 구현하거나 ``bpf_xdp_adjust_meta()`` 를 통해 패킷
+앞에 사용자 정의 메타 데이터를 추가하는 프로그램에서 256 바이트의 추가 헤드
+룸을 사용할 수 있도록합니다.
 
-The packet representation in XDP that is passed to the BPF program as
-the BPF context looks as follows:
+프레임워크에서 BPF 프로그램이 드라이버에게 패킷 진행 방법을 지시하기 위해
+반환 할 수 있는 XDP 액션 코드가 아래의 절에 자세히 설명되어 있으며, XDP
+계층에서 실행되는 BPF 프로그램을 atomically 하게 바꿀 수 있습니다. XDP는
+고성능을 위해 디자인 되었습니다. BPF는 '직접 패킷 액세스
+(direct packet access)'를 통해 패킷 데이터에 액세스 할 수 있으며,  이는
+프로그램이 레지스터에서 직접 데이터 포인터를 보유하고, 내용을 레지스터에
+로드하고, 레지스터로 부터 패킷으로 씁니다.
+
+BPF 컨텍스트로 BPF 프로그램에 전달 된 XDP의 패킷 표현은 다음과 같습니다:
 
 ::
 
@@ -3233,29 +3229,28 @@ the BPF context looks as follows:
         struct xdp_rxq_info *rxq;
     };
 
-``data`` points to the start of the packet data in the page, and as the
-name suggests, ``data_end`` points to the end of the packet data. Since XDP
-allows for a headroom, ``data_hard_start`` points to the maximum possible
-headroom start in the page, meaning, when the packet should be encapsulated,
-then ``data`` is moved closer towards ``data_hard_start`` via ``bpf_xdp_adjust_head()``.
-The same BPF helper function also allows for decapsulation in which case
-``data`` is moved further away from ``data_hard_start``.
+``data`` 는 페이지의 패킷 데이터의 시작을 가르키며, 이름에서 알 수 있듯이
+``data_end`` 는 패킷 데이터의 끝을 가르킵니다. XDP는 헤드 룸을 허용하기
+때문에 ``data_hard_start`` 는 페이지에서 가능한 최대 헤드 룸 시작을 가리
+키며, 즉, 패킷을 캡슐화 해야 할 때 ``data`` 가 ``bpf_xdp_adjust_head()`` 를
+통해 ``data_hard_start`` 쪽으로 더 가까이 이동합니다. 같은 BPF helper 함수는
+``data`` 를 ``data_hard_start`` 에서 더 멀리 이동시키는 경우 역캡슐화를 허용
+합니다.
 
-``data_meta`` initially points to the same location as ``data`` but
-``bpf_xdp_adjust_meta()`` is able to move the pointer towards ``data_hard_start``
-as well in order to provide room for custom metadata which is invisible to
-the normal kernel networking stack but can be read by tc BPF programs since
-it is transferred from XDP to the ``skb``. Vice versa, it can remove or reduce
-the size of the custom metadata through the same BPF helper function by
-moving ``data_meta`` away from ``data_hard_start`` again. ``data_meta`` can
-also be used solely for passing state between tail calls similarly to the
-``skb->cb[]`` control block case that is accessible in tc BPF programs.
+``data_meta`` 는 처음에는 ``data`` 와 같은 위치를 가리키고 ``bpf_xdp_adjust_meta()``
+는 일반적인 커널 네트워킹 스택에서는 볼 수 없는 사용자 정의 메타 데이터 공간을 제공
+하기 위해 포인터를 ``data_hard_start`` 방향으로 이동할 수 있지만, tc BPF 프로그램은
+XDP에서 ``skb`` 로 전송되기 때문에 읽을 수 있습니다. 그 반대의 경우에는
+``data_hard_start`` 에서 ``data_meta`` 를 다시 이동하여, 동일한 BPF helper 함수를
+통해, 사용자 정의 메타 데이터의 크기를 제거하거나 줄일 수 있습니다. ``data_meta`` 는
+tc BPF 프로그램에서 액세스 할 수있는 ``skb->cb[]`` 제어 블럭의 경우와 유사하게 tail
+호출 간에 상태를 전달하는 용도로만 사용할 수도 있습니다.
 
-This gives the following relation respectively invariant for the ``struct xdp_buff``
-packet pointers: ``data_hard_start`` <= ``data_meta`` <= ``data`` < ``data_end``.
+이것은 ``struct xdp_buff`` 패킷포인터에 대해 각가 다음과 같은 관계를 갖습니다:
+``data_hard_start`` <= ``data_meta`` <= ``data`` < ``data_end``.
 
-The ``rxq`` field points to some additional per receive queue metadata which
-is populated at ring setup time (not at XDP runtime):
+``rxq`` 필드는 링 설정 시간(XDP 런타임이 아님)에 채워지는 수신 큐 메타 데이터 당
+몇 가지 추가 정보를 가리 킵니다:
 
 ::
 
@@ -3265,14 +3260,14 @@ is populated at ring setup time (not at XDP runtime):
         u32 reg_state;
     } ____cacheline_aligned;
 
-The BPF program can retrieve ``queue_index`` as well as additional data
-from the netdevice itself such as ``ifindex``, etc.
+BPF 프로그램은 ``ifindex`` 와 같은 netdevice 자체에서 추가 데이터 뿐만 아니라,
+``queue_index`` 를 검색 할 수 있습니다.
 
 **BPF program return codes**
 
-After running the XDP BPF program, a verdict is returned from the program in
-order to tell the driver how to process the packet next. In the ``linux/bpf.h``
-system header file all available return verdicts are enumerated:
+XDP BPF 프로그램을 실행 한 후 드라이버에게 다음 패킷 처리 방법을 알리기 위해 프로
+그램에서 결정이 반환됩니다. ``linux/bpf.h`` 시스템 헤더 파일에서 사용 가능한 모든
+반환 결과가 나열됩니다:
 
 ::
 
@@ -3284,128 +3279,100 @@ system header file all available return verdicts are enumerated:
         XDP_REDIRECT,
     };
 
-``XDP_DROP`` as the name suggests will drop the packet right at the driver
-level without wasting any further resources. This is in particular useful
-for BPF programs implementing DDoS mitigation mechanisms or firewalling in
-general. The ``XDP_PASS`` return code means that the packet is allowed to
-be passed up to the kernel's networking stack. Meaning, the current CPU
-that was processing this packet now allocates a ``skb``, populates it, and
-passes it onwards into the GRO engine. This would be equivalent to the
-default packet handling behavior without XDP. With ``XDP_TX`` the BPF program
-has an efficient option to transmit the network packet out of the same NIC it
-just arrived on again. This is typically useful when few nodes are implementing,
-for example, firewalling with subsequent load balancing in a cluster and
-thus act as a hairpinned load balancer pushing the incoming packets back
-into the switch after rewriting them in XDP BPF. ``XDP_REDIRECT`` is similar
-to ``XDP_TX`` in that it is able to transmit the XDP packet, but through
-another NIC. Another option for the ``XDP_REDIRECT`` case is to redirect
-into a BPF cpumap, meaning, the CPUs serving XDP on the NIC's receive queues
-can continue to do so and push the packet for processing the upper kernel
-stack to a remote CPU. This is similar to ``XDP_PASS``, but with the ability
-that the XDP BPF program can keep serving the incoming high load as opposed
-to temporarily spend work on the current packet for pushing into upper
-layers. Last but not least, ``XDP_ABORTED`` which serves denoting an exception
-like state from the program and has the same behavior as ``XDP_DROP`` only
-that ``XDP_ABORTED`` passes the ``trace_xdp_exception`` tracepoint which
-can be additionally monitored to detect misbehavior.
+이름에서 알 수 있듯이 ``XDP_DROP`` 은 추가 리소스를 낭비하지 않고 드라이버 수준
+에서 바로 패킷을 삭제합니다. 이것은 특히 DDoS 완화 메커니즘 또는 방화벽을 일반적
+으로 구현하는 BPF 프로그램에 유용합니다. ``XDP_PASS`` 리턴 코드는 패킷이 커널의
+네트워킹 스택에 전달 될 수 있음을 의미합니다. 이 의미는 이 패킷을 처리하고 있던
+현재 CPU는 이제 ``skb`` 를 할당하고 채우고 GRO 엔진으로 전달합니다. 이것은 XDP가
+없는 기본 패킷 처리 동작과 동일합니다. ``XDP_TX`` 를 사용하면 BPF 프로그램은 방금
+도착한 동일한 NIC에서 네트워크 패킷을 전송할 수 있는 효율적인 옵션을 제공합니다.
+이는 일반적으로 클러스터에서 후속 로드 밸런싱을 사용하는 방화벽과 같이, XDP BFP에
+서 재작성 후 들어오는 패킷을 다시 스위치로 밀어 넣는 헤어핀(loopback) 로드 밸런서
+의 역활을 하는 몇 개의 노드가 구현되는 경우에 유용합니다. ``XDP_REDIRECT`` 는 XDP
+패킷을 전송할 수 있지만 다른 NIC를 통해 전송할 수 있다는 점에서 ``XDP_TX`` 와 유사
+합니다. ``XDP_REDIRECT`` 의 또 다른 옵션은 BPF cpumap으로 리디렉션하는 것이며, 이
+의미는, NIC의 수신 대기열에서 XDP를 제공하는 CPU는 계속해서 상위 커널 스택을 처리
+하기 위해 패킷을 원격 CPU로 푸시 할 수 있습니다. 이는 ``XDP_PASS`` 와 유사하지만
+XDP BPF 프로그램이 상위 계층으로 푸시하기 위해, 일시적으로 현재 패킷에 대한 작업을
+수행하는 것과 달리 들어오는 높은 부하를 계속 서비스 할 수있는 기능을 갖추고 있습니다.
+마지막으로 프로그램에서 상태와 같은 예외를 표시하는 역할을 하는 ``XDP_ABORTED`` 가
+있으며, ``XDP_DROP`` 와 동일한 동작을하며, ``XDP_ABORTED`` 는 추가로 잘못 감지 된
+``trace_xdp_exception tracepoint`` 을 전달합니다.
 
-**Use cases for XDP**
+**XDP 사용 사례**
 
-Some of the main use cases for XDP are presented in this subsection. The
-list is non-exhaustive and given the programmability and efficiency XDP
-and BPF enables, it can easily be adapted to solve very specific use
-cases.
+XDP의 주요 사용 사례 중 일부 이 하위 섹션에 나와 있습니다. 이 목록은 포괄적인 것은
+아니며 XDP 및 BPF가 프로그래밍 할 수있는 효율성과 효율성을 고려할 때 매우 구체적인
+사용 사례를 해결하기 위해 쉽게 적용 할 수 있습니다.
 
-* **DDoS mitigation, firewalling**
+* **DDoS 완화, 방화벽 기능**
 
-  One of the basic XDP BPF features is to tell the driver to drop a packet
-  with ``XDP_DROP`` at this early stage which allows for any kind of efficient
-  network policy enforcement with having an extremely low per-packet cost.
-  This is ideal in situations when needing to cope with any sort of DDoS
-  attacks, but also more general allows to implement any sort of firewalling
-  policies with close to no overhead in BPF e.g. in either case as stand alone
-  appliance (e.g. scrubbing 'clean' traffic through ``XDP_TX``) or widely
-  deployed on nodes protecting end hosts themselves (via ``XDP_PASS`` or
-  cpumap ``XDP_REDIRECT`` for good traffic). Offloaded XDP takes this even
-  one step further by moving the already small per-packet cost entirely
-  into the NIC with processing at line-rate.
+  기본적인 XDP BPF 기능 중 하나이며 드라이버가 초기 단계에서 ``XDP_DROP`` 를 사용하
+  여 패킷을 drop하도록 지시하는 것으로 패킷 당 비용이 매우 낮아 모든 종류의 효율적인
+  네트워크 정책 시행을 허용합니다. 이것은 모든 종류의 DDoS 공격애 대처할 필요가 있을
+  때 이상적이며, BPF에서 오버레드가 거의 없는 모든 종류의 방화벽 정책을 구현 할 수
+  있으며, 예를 들어 독립형 어플라이언스 (예를 들어, ``XDP_TX`` 를 통한 'clean' 트래픽
+  제거) 또는 마지막 호스트 자체를 보호하는 노드 (``XDP_PASS`` 또는 cpumap ``XDP_REDIRECT``
+  를 통한 양호한 트래픽)에 널리 배치 됩니다. 오프로드 된 XDP는 라인 속도로 처리하면서,
+  이미 패킷 당 비용을 전체적으로 NIC로 완전히 옮김으로써 한 단계 더 나아갑니다.
 
 ..
 
-* **Forwarding and load-balancing**
+* **포워딩 및 로드밸런싱**
 
-  Another major use case of XDP is packet forwarding and load-balancing
-  through either ``XDP_TX`` or ``XDP_REDIRECT`` actions. The packet can
-  be arbitrarily mangled by the BPF program running in the XDP layer,
-  even BPF helper functions are available for increasing or decreasing
-  the packet's headroom in order to arbitrarily encapsulate respectively
-  decapsulate the packet before sending it out again. With ``XDP_TX``
-  hairpinned load-balancers can be implemented that push the packet out
-  of the same networking device it originally arrived on, or with the
-  ``XDP_REDIRECT`` action it can be forwarded to another NIC for
-  transmission. The latter return code can also be used in combination
-  with BPF's cpumap to load-balance packets for passing up the local
-  stack, but on remote, non-XDP processing CPUs.
+  XDP의 또 다른 주요 사용 사례는 ``XDP_TX`` 또는 ``XDP_REDIRECT`` 동작을 통한 패킷 전달
+  및 로드 밸런싱 입니다. 패킷은 XDP 계층에서 실행되는 BPF 프로그램에 의해 중간에 mangle
+  될수 있으며, BPF 도우미 함수 기능은 패킷을 캡슐화 해제하고 다시 캡슐화 하기 전에 캡슐
+  화하기 위해패킷의 headroom을 늘리거나 줄일 수 있습니다. 원래 도착한 동일한 네트워크
+  장치에서 패킷을 푸시 하는 ``XDP_TX`` hairpinned(혹은 loopback) 로드 밸런서를 사용하거나
+  ``XDP_REDIRECT`` 동작을 통해 전송을 위해 다른 NIC로 전달할 수 있습니다. 이후의 리턴
+  코드는 BPF의 cpumap과 함께  로컬 스택을 통과 하기위한 패킷을 로드 밸런싱하기 위해 사용
+  될 수 있지만 원격의 non-XDP 프로세싱 CPU에서는 사용할 수 없습니다
 
 ..
 
-* **Pre-stack filtering / processing**
+* **사전 스택 필터링 / 처리**
 
-  Besides policy enforcement, XDP can also be used for hardening the
-  kernel's networking stack with the help of ``XDP_DROP`` case, meaning,
-  it can drop irrelevant packets for a local node right at the earliest
-  possible point before the networking stack sees them e.g. given we
-  know that a node only serves TCP traffic, any UDP, SCTP or other L4
-  traffic can be dropped right away. This has the advantage that packets
-  do not need to traverse various entities like GRO engine, the kernel's
-  flow dissector and others before it can be determined to drop them and
-  thus this allows for reducing the kernel's attack surface. Thanks to
-  XDP's early processing stage, this effectively 'pretends' to the kernel's
-  networking stack that these packets have never been seen by the networking
-  device. Additionally, if a potential bug in the stack's receive path
-  got uncovered and would cause a 'ping of death' like scenario, XDP can be
-  utilized to drop such packets right away without having to reboot the
-  kernel or restart any services. Due to the ability to atomically swap
-  such programs to enforce a drop of bad packets, no network traffic is
-  even interrupted on a host.
+  정책 적용 외에도 XDP는 ``XDP_DROP`` 의 경우, 커널의 네트워크 스택을 강화하는 데 사용
+  할 수 있으며, 이 의미는 네트워크 스택이 알기 전에 로컬 노트에 대해 관련성 없는 패킷을
+  가능한 빨리 삭제 할 수 있으며, 예를 들어 노드가 TCP 트래픽 만 처리하는 것을 알면,
+  모든 UDP, SCTP 또는 기타 L4 트래픽을 버릴 수 있습니다. 이것은 패킷이 GRO 엔진 과 같은
+  커널의 흐름 분석기 및 다른 것들을 가로지를  필요가 없이  패킷을 버릴수 있기 때문에
+  커널의 공격 영역을 줄일 수 있다는 이점이 있습니다. XDP의 조기 처리 단계 덕분에,
+  이것은 효과적으로 커널의 네트워킹 스택을 가장하며, 이러한 패킷은 네트워킹 장치에서
+  확인된적은 없습니다. 또한 스택의 수신 경로에 잠재적 인 버그가 발견되어 'ping of death'
+  같은 시나리오가 발생하면 XDP를 사용하여 커널을 재부팅하거나 서비스를 다시 시작하지
+  않고도 해당 패킷을 즉시 삭제할 수 있습니다. 이러한 프로그램을 atomically으로 스왑
+  하여 불량 패킷을 버리는 기능으로 인해 호스트에서 네트워크 트래픽이 중단되지 않습니다.
 
-  Another use case for pre-stack processing is that given the kernel has not
-  yet allocated an ``skb`` for the packet, the BPF program is free to modify
-  the packet and, again, have it 'pretend' to the stack that it was received
-  by the networking device this way. This allows for cases such as having
-  custom packet mangling and encapsulation protocols where the packet can be
-  decapsulated prior to entering GRO aggregation in which GRO otherwise would
-  not be able to perform any sort of aggregation due to not being aware of
-  the custom protocol. XDP also allows to push metadata (non-packet data) in
-  front of the packet. This is 'invisible' to the normal kernel stack, can
-  be GRO aggregated (for matching metadata) and later on processed in
-  coordination with a tc ingress BPF program where it has the context of
-  a ``skb`` available for e.g. setting various skb fields.
+  사전 스택 처리를 위한 또 다른 사용 사례는 커널이 아직 패킷에 대한 ``skb`` 를 할당하지
+  않은 경우, BPF 프로그램은 패킷을 수정 할 수 있으며, 이 방법으로 네트워크 장비로 부터
+  스택에 수신된 패킷 인척 합니다. 이렇게하면 GRO 는 사용자 정의 프로토콜를 인식 못하기
+  때문에 어떠한 종료의 통계도 수행 할수 없으며, GRO aggregation을 들어가기 전에 패킷을
+  캡슐화 해제할 수있는 사용자 정의  패킷 맹 글링 및 캡슐화 프로토콜이 있는 경우가 허용
+  됩니다. 이는 일반적인 커널 스택에 '보이지' 않으며, GRO(메타 데이터 매칭을 위해)를
+  집계 하고, 나중에 예를 들어 사용할 수있는 다양한 skb 필드를 설정 하여, ``skb``
+  컨텍스트를 갖는 tc ingress BPF 프로그램과 함께 처리 할 수 있습니다.
 
 ..
 
-* **Flow sampling, monitoring**
+* **flow 샘플링, 모니터링**
 
-  XDP can also be used for cases such as packet monitoring, sampling or any
-  other network analytics, for example, as part of an intermediate node in
-  the path or on end hosts in combination also with prior mentioned use cases.
-  For complex packet analysis, XDP provides a facility to efficiently push
-  network packets (truncated or with full payload) and custom metadata into
-  a fast lockless per CPU memory mapped ring buffer provided from the Linux
-  perf infrastructure to an user space application. This also allows for
-  cases where only a flow's initial data can be analyzed and once determined
-  as good traffic having the monitoring bypassed. Thanks to the flexibility
-  brought by BPF, this allows for implementing any sort of custom monitoring
-  or sampling.
+  또한 XDP는 패킷 모니터링, 샘플링 또는 기타 네트워크 분석과 같은 경우에 사용할 수
+  있으며, 예를 들어 경로의 중간 노드 또는 끝 호스트에서 앞서 언급 한 사용 사례와
+  함께 사용할 수 있습니다.복잡한 패킷 분석을 위해 XDP는 네트워크 패킷 (생략된 또는
+  전체 페이로드 포함) 및 사용자 지정 메타 데이터를  Linux perf 인프라에서 사용자
+  공간 응용 프로그램으로 제공되는 CPU 메모리 매핑 링 버퍼 당 빠른 lock없이 신속하게
+  푸시 할 수있는 기능을 제공합니다. 이는 또한 흐름의 초기 데이터 만 분석하고 모니터링
+  을 우회하는 양호한 트래픽으로 판단되는 경우도 허용합니다. BPF가 제공하는 유연성으로
+  인해 사용자 정의 모니터링이나 샘플링을 구현할 수 있습니다.
 
 ..
 
-One example of XDP BPF production usage is Facebook's SHIV and Droplet
-infrastructure which implement their L4 load-balancing and DDoS countermeasures.
-Migrating their production infrastructure away from netfilter's IPVS
-(IP Virtual Server) over to XDP BPF allowed for a 10x speedup compared
-to their previous IPVS setup. This was first presented at the netdev 2.1
-conference:
+프로덕션 사용의 한 예로 L4로드 균형 조정 및 DDoS 대응을 구현하는 Facebook SHIV및
+Droplet infrastructure 가 있습니다. 프로덕션 인프라를 Netfilter의 IPVS (IP Virtual
+Server)에서 XDP BPF로 마이그레이션하면 이전 IPVS 설정에 비해 속도가 10 배 빨라졌습
+니다. 이것은 netdev 2.1 컨퍼런스에서 처음 발표되었습니다:
 
 * Slides: https://www.netdevconf.org/2.1/slides/apr6/zhou-netdev-xdp-2017.pdf
 * Video: https://youtu.be/YEU2ClcGqts
