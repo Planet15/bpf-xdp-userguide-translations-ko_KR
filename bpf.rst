@@ -3389,53 +3389,52 @@ high-performance programmable packet processing directly inside the kernel:
 * Slides: https://www.netdevconf.org/2.1/slides/apr6/bertin_Netdev-XDP.pdf
 * Video: https://youtu.be/7OuOukmuivg
 
-**XDP operation modes**
+**XDP 동작 모드**
 
-XDP has three operation modes where 'native' XDP is the default mode. When
-talked about XDP this mode is typically implied.
+XDP에는 세 가지 작동 모드가 있습니다. 'Native' XDP가 기본 모드입니다.
+XDP에 관해 이야기 할 때 일반적으로 이 모드가 암시됩니다.
+
+
 
 * **Native XDP**
 
-  This is the default mode where the XDP BPF program is run directly out
-  of the networking driver's early receive path. Most widespread used NICs
-  for 10G and higher support native XDP already.
+  이 모드는 XDP BPF 프로그램이 네트워킹 드라이버의 초기 수신 경로에서
+  직접 실행되는 기본 모드입니다. 10G 이상을 위해 널리 사용되는 NIC는
+  이미 Native XDP를 지원합니다.
 
 ..
 
-* **Offloaded XDP**
+* **오프로드된 XDP**
 
-  In the offloaded XDP mode the XDP BPF program is directly offloaded into
-  the NIC instead of being executed on the host CPU. Thus, the already
-  extremely low per-packet cost is pushed off the host CPU entirely and
-  executed on the NIC, providing even higher performance than running in
-  native XDP. This offload is typically implemented by SmartNICs
-  containing multi-threaded, multicore flow processors where a in-kernel
-  JIT compiler translates BPF into native instructions for the latter.
-  Drivers supporting offloaded XDP usually also support native XDP for
-  cases where some BPF helpers may not yet or only be available for the
-  native mode.
+  오프로드 XDP 모드에서 XDP BPF 프로그램은 호스트 CPU에서 실행되는 대신에
+  NIC로 직접 오프로드됩니다. 따라서 패킷 당 비용이 매우 낮아 호스트 CPU에서
+  완전히 푸시되고 NIC에서 실행되므로 Native XDP에서 실행하는 것 보다 훨씬
+  높은 성능을 제공합니다. 이 오프로드는 일반적으로 커널 내 JIT 컴파일러가
+  BPF를 후자의 기본 명령어로 변환하는 멀티 스레드, 멀티 코어 플로우 프로세서
+  를 포함하는 SmartNIC에 의해 구현됩니다. 또한 오프로드된 XDP를 지원하는
+  드라이버는 일부 BPF helper가 아직 또는 native 모드에서만 사용할 수없는 경우
+  에 대비해 Native XDP를 지원합니다.
 
 ..
 
 * **Generic XDP**
 
-  For drivers not implementing native or offloaded XDP yet, the kernel
-  provides an option for generic XDP which does not require any driver
-  changes since run at a much later point out of the networking stack.
-  This setting is primarily targeted at developers who want to write and
-  test programs against the kernel's XDP API, and will not operate at the
-  performance rate of the native or offloaded modes. For XDP usage in a
-  production environment either the native or offloaded mode is better
-  suited and the recommended way to run XDP.
+  native 또는 오프로드된 XDP를 아직 구현되지 않는 드라이버의 경우, 커널은
+  네트워킹 스택에서 많이 늦는 시점에서 실행되는 드라이버 변경이 필요없는
+  generic XDP 옵션을 제공합니다. 이 설정은 주로 커널의 XDP API에 대해
+  프로그램을 작성 및 테스트하고 원시 또는 오프로드된 모드의 성능 속도로
+  동작하지 않는 개발자를 대상으로합니다. 프로덕션 환경에서의 XDP 사용의
+  경우 native 또는 오프로드된 모드가 더 적합하며 XDP를 실행하는 데
+  권장되는 방법입니다.
 
 ..
 
 **Driver support**
 
-Since BPF and XDP is evolving quickly in terms of feature and driver support,
-the following lists native and offloaded XDP drivers as of kernel 4.17.
+BPF와 XDP는 기능 및 드라이버 지원 측면에서 빠르게 진화하고 있기 때문에
+다음은 커널 4.17에서의 네이티브 및 오프로드 된 XDP 드라이버 목록입니다.
 
-**Drivers supporting native XDP**
+**native XDP를 지원하는 드라이버**
 
 * **Broadcom**
 
@@ -3493,13 +3492,14 @@ the following lists native and offloaded XDP drivers as of kernel 4.17.
 
   * nfp [2]_
 
-Note that examples for writing and loading XDP programs are included in
-the toolchain section under the respective tools.
+XDP 프로그램 작성 및 로드 예제는 해당 도구 아래의 툴체인 섹션에 각각 도구
+에 포함되어 있습니다.
 
-.. [1] XDP for sfc available via out of tree driver as of kernel 4.17, but
-   will be upstreamed soon.
-.. [2] Some BPF helper functions such as retrieving the current CPU number
-   will not be available in an offloaded setting.
+.. [1] sfc에 대한 XDP 지원은 커널 4.17에서 트리 드라이버를 통해 사용할 수
+   있지만 곧 업스트림에 반영 예정에 있습니다.
+.. [2] 현재 CPU 번호 검색과 같은 일부 BPF helper 기능은 오프로드 된 설정
+   에서 사용할 수 없습니다.
+
 
 tc (traffic control)
 --------------------
