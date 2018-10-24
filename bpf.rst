@@ -3501,154 +3501,133 @@ XDP 프로그램 작성 및 로드 예제는 해당 도구 아래의 툴체인 �
    에서 사용할 수 없습니다.
 
 
-tc (traffic control)
---------------------
+tc (트래픽 제어)
+----------------
 
-Aside from other program types such as XDP, BPF can also be used out of the
-kernel's tc (traffic control) layer in the networking data path. On a high-level
-there are three major differences when comparing XDP BPF programs to tc BPF
-ones:
+XDP와 같은 다른 프로그램 유형 과는 별도로 BPF는 네트워킹 데이터 경로의 커널
+tc(트래픽 제어) 계층에서도 사용할 수 있습니다. 상위 수준에서 XDP BPF 프로그램
+과 tc BPF 프로그램을 비교할 때 세 가지 주요 차이점이 있습니다:
 
-* The BPF input context is a ``sk_buff`` not a ``xdp_buff``. When the kernel's
-  networking stack receives a packet, after the XDP layer, it allocates a buffer
-  and parses the packet to store metadata about the packet. This representation
-  is known as the ``sk_buff``. This structure is then exposed in the BPF input
-  context so that BPF programs from the tc ingress layer can use the metadata that
-  the stack extracts from the packet. This can be useful, but comes with an
-  associated cost of the stack performing this allocation and metadata extraction,
-  and handling the packet until it hits the tc hook. By definition, the ``xdp_buff``
-  doesn't have access to this metadata because the XDP hook is called before
-  this work is done. This is a significant contributor to the performance
-  difference between the XDP and tc hooks.
+* BPF 입력 컨텍스트는 ``xdp_buff`` 가 아닌 ``sk_buff`` 입니다. 커널의 네트워킹
+  스택이 패킷을 받으면 XDP 계층 다음에 버퍼를 할당하고 패킷을 구문 분석하여
+  패킷에 대한 메타 데이터를 저장합니다. 이 표현을 ``sk_buff`` 라고합니다. 이후
+  이 구조는 BPF 입력 컨텍스트에서 노출되므로 tc ingress 레이어의 BPF 프로그램이
+  스택에서 패킷에서 추출한 메타 데이터를 사용할 수 있습니다.이것은 유용 할 수
+  있지만,이러한  할당 및 메타 데이터 추출을 수행하는 스택의 관련 비용과 함께
+  tc hook에 도달 할 때까지 패킷을 처리합니다. 정의에 따르면 ``xdp_buff`` 는 이
+  작업이 완료되기 전에, XDP hook가 호출되기 때문에 이 메타 데이터에 액세스
+  할 수 없습니다. 이는 XDP와 tc hook 간의 성능 차이에 크게 관여됩니다.
 
-  Therefore, BPF programs attached to the tc BPF hook can, for instance, read or
-  write the skb's ``mark``, ``pkt_type``, ``protocol``, ``priority``,
-  ``queue_mapping``, ``napi_id``, ``cb[]`` array, ``hash``, ``tc_classid`` or
-  ``tc_index``, vlan metadata, the XDP transferred custom metadata and various
-  other information. All members of the ``struct __sk_buff`` BPF context used
-  in tc BPF are defined in the ``linux/bpf.h`` system header.
+  따라서 tc BPF hook에 연결 된 BPF 프로그램은 예를 들어, 읽기 혹은 쓰기 skb의 ``mark``
+  , ``pkt_type``, ``protocol``, ``priority``, ``queue_mapping``, ``napi_id``, ``cb[]`` 배열,
+  ``hash``, ``tc_classid`` 혹은 ``tc_index`` , vlan 메타데이터, XDP로 전송 된 사용자
+  정의 메타 데이터 및 다양한 다른 정보를 제공 할 수 있습니다. tc BPF에서 사용되는
+  ``struct __sk_buff`` BPF 컨텍스트의 모든 멤버는 ``linux/bpf.h`` 시스템 헤더에 정의되어
+  있습니다.
 
-  Generally, the ``sk_buff`` is of a completely different nature than
-  ``xdp_buff`` where both come with advantages and disadvantages. For example,
-  the ``sk_buff`` case has the advantage that it is rather straight forward to
-  mangle its associated metadata, however, it also contains a lot of protocol
-  specific information (e.g. GSO related state) which makes it difficult to
-  simply switch protocols by solely rewriting the packet data. This is due to
-  the stack processing the packet based on the metadata rather than having the
-  cost of accessing the packet contents each time. Thus, additional conversion
-  is required from BPF helper functions taking care that ``sk_buff`` internals
-  are properly converted as well. The ``xdp_buff`` case however does not
-  face such issues since it comes at such an early stage where the kernel
-  has not even allocated an ``sk_buff`` yet, thus packet rewrites of any
-  kind can be realized trivially. However, the ``xdp_buff`` case has the
-  disadvantage that ``sk_buff`` metadata is not available for mangling
-  at this stage. The latter is overcome by passing custom metadata from
-  XDP BPF to tc BPF, though. In this way, the limitations of each program
-  type can be overcome by operating complementary programs of both types
-  as the use case requires.
+  일반적으로 ``sk_buff`` 는 장점과 단점이 모두 있는 ``xdp_buff`` 와 완전히 다릅니다.
+  예를 들어 ``sk_buff`` 의 경우에는 연관된 메타 데이터를 mangle하는 것이 훨씬 간단하지만,
+  많은 프로토콜 관련 정보 (예 : GSO 관련 상태) 를 가진 sk_buff가 단순히 패킷 데이터를
+  다시 작성하여 프로토콜을 간단하게 전환하는 되는 것은 어렵습니다. 이것은 매번 패킷
+  내용에 액세스하는 비용이 들지 않고 메타 데이터를 기반으로 패킷을 처리하는 스택 때문
+  입니다. 따라서 ``sk_buff`` 내부가 올바르게 변환되도록 주의하면서, BPF helper 함수에서
+  추가 변환이 필요합니다. 그러나 xdp_buff의 경우 커널이 아직 sk_buff를 할당하지 않은
+  처음 단계에 있기 때문에 이러한 문제는 발생하지 않으므로 모든 종류의 패킷 재 작성을
+  쉽게 실현할 수 있습니다. 그러나 ``xdp_buff`` 의 경우에는이 단계에서 mangling에
+  sk_buff 메타 데이터를 사용할 수 없다는 단점이 있습니다.후자는 XDP BPF에서 tc BPF로
+  사용자 지정 메타 데이터를 전달함으로써 해결이 됩니다. 이러한 방식으로, 각 프로그램
+  유형의 한계는 사용 사례를 요구하는 두 유형의 보완 프로그램을 동작>하는 것으로 해결
+  될 수 있습니다.
 
 ..
 
-* Compared to XDP, tc BPF programs can be triggered out of ingress and also
-  egress points in the networking data path as opposed to ingress only in
-  the case of XDP.
+* XDP와 비교하여 네트워킹 데이터 경로의 ingress 및 egress 지점에서 tc BPF 프로그램이
+  트리거 될 수 있으며, XDP의 경우는 반대로 ingress 만 가능합니다.
 
-  The two hook points ``sch_handle_ingress()`` and ``sch_handle_egress()`` in
-  the kernel are triggered out of ``__netif_receive_skb_core()`` and
-  ``__dev_queue_xmit()``, respectively. The latter two are the main receive
-  and transmit functions in the data path that, setting XDP aside, are triggered
-  for every network packet going in or coming out of the node allowing for
-  full visibility for tc BPF programs at these hook points.
+  커널에서 ``sch_handle_ingress()`` 및 ``sch_handle_egress()`` 라는 두 개의 hook 지점
+  은 각각 ``__netif_receive_skb_core()`` 및 ``__dev_queue_xmit()`` 에서 트리거 됩니다.
+  후자의 두 가지는 데이터 경로의 주요 수신 및 전송 기능으로, XDP를 별도로 설정하면
+  노드에서 들어오고 나가는 모든 네트워크 패킷에 대해 트리거되어 이러한 hook 지점에서
+  tc BPF 프로그램을 완벽하게 볼 수 있습니다.
 
 ..
 
-* The tc BPF programs do not require any driver changes since they are run
-  at hook points in generic layers in the networking stack. Therefore, they
-  can be attached to any type of networking device.
+* tc BPF 프로그램은 네트워킹 스택의 일반 레이어에서 연결 지점에서 실행 되므로 드라이버
+  변경이 필요하지 않습니다. 따라서 모든 유형의 네트워킹 장치에 연결할 수 있습니다.
 
-  While this provides flexibility, it also trades off performance compared
-  to running at the native XDP layer. However, tc BPF programs still come
-  at the earliest point in the generic kernel's networking data path after
-  GRO has been run but **before** any protocol processing, traditional iptables
-  firewalling such as iptables PREROUTING or nftables ingress hooks or other
-  packet processing takes place. Likewise on egress, tc BPF programs execute
-  at the latest point before handing the packet to the driver itself for
-  transmission, meaning **after** traditional iptables firewalling hooks like
-  iptables POSTROUTING, but still before handing the packet to the kernel's
-  GSO engine.
+  이는 유연성을 제공하지만 네이티브 XDP 계층에서 실행하는 것과 비교하여 성능을
+  저하 시킵니다. 그러나 tc BPF 프로그램은 GRO이 실행 된 후 모든 프로토콜 처리,
+  기존 iptables 방화벽이 실행되기 **이전** 에 일반 커널의 네트워킹 데이터 경로의
+  가장  초기 단계에 있으며, 예를 들어, iptables PREROUTING 또는 nftables ingress hooks
+  또는 다른 패킷 처리 와 같은 항목이 발생합니다. 마찬가지로 egress에서 tc BPF
+  프로그램은 전송을 위해 패킷을 드라이버에 전달 하기전 마지막 부분에서 실행이 되며
+  이 의미는 iptables POSTROUTING과 같은 전통적인 iptables firewall hook **이후**
+  패킷을 커널의 GSO 엔진에게 넘겨주기 전 부분을 설명하는내용입니다.
 
-  One exception which does require driver changes however are offloaded tc
-  BPF programs, typically provided by SmartNICs in a similar way as offloaded
-  XDP just with differing set of features due to the differences in the BPF
-  input context, helper functions and verdict codes.
+  그러나 드라이버 변결을 요구하는 예외 사항 중 하나는 tc BPF 프로그램을 오프로드
+  하는 것이며, 일반적으로 BPF 입력 컨텍스트, helper 기능 및 결정 코드의 차이로 인해
+  기능이 다르기 때문에 오프로드된 XDP와 유사한 방식으로 SmartNIC에서 제공합니다.
 
 ..
 
-BPF programs run in the tc layer are run from the ``cls_bpf`` classifier.
-While the tc terminology describes the BPF attachment point as a "classifier",
-this is a bit misleading since it under-represents what ``cls_bpf`` is
-capable of. That is to say, a fully programmable packet processor being able
-not only to read the ``skb`` metadata and packet data, but to also arbitrarily
-mangle both, and terminate the tc processing with an action verdict. ``cls_bpf``
-can thus be regarded as a self-contained entity that manages and executes tc
-BPF programs.
+tc 계층에서 실행되는 BPF 프로그램은 ``cls_bpf`` classifier에서 실행됩니다.
+tc 용어는 BPF 연결 지점을 "classifier" 로 설명하지만 ``cls_bpf`` 가 수행 할 수
+있는 것을 충분하지 않는 표현을 하기 때문에 다소 오해의 소지가 있습니다.
+즉, 완전히 프로그래밍 가능한 패킷 프로세서는 ``skb`` 메타 데이터 및 패킷 데이터
+를 읽을 수있을뿐만 아니라 임의로 mangle하고 동작 판정으로 tc 처리를 종료 할
+수 있습니다. 따라서 ``cls_bpf`` 는 tc BPF 프로그램을 관리하고 실행하는 독립적인
+엔티티로 간주 될 수 있습니다.
 
-``cls_bpf`` can hold one or more tc BPF programs. In the case where Cilium
-deploys ``cls_bpf`` programs, it attaches only a single program for a given hook
-in ``direct-action`` mode. Typically, in the traditional tc scheme, there is a
-split between classifier and action modules, where the classifier has one
-or more actions attached to it that are triggered once the classifier has a
-match. In the modern world for using tc in the software data path this model
-does not scale well for complex packet processing. Given tc BPF programs
-attached to ``cls_bpf`` are fully self-contained, they effectively fuse the
-parsing and action process together into a single unit. Thanks to ``cls_bpf``'s
-``direct-action`` mode, it will just return the tc action verdict and
-terminate the processing pipeline immediately. This allows for implementing
-scalable programmable packet processing in the networking data path by avoiding
-linear iteration of actions. ``cls_bpf`` is the only such "classifier" module
-in the tc layer capable of such a fast-path.
+``cls_bpf`` 는 하나 이상의 tc BPF 프로그램을 보유 할 수 있습니다. Cilium이
+``cls_bpf`` 프로그램을 배포하는 경우 ``직접 실행 모드`` 에서 지정된 hook에
+대해 단일 프로그램 만 연결합니다. 일반적으로 전통적인 TC 체계에는 classfier와
+일치하는 하나 이상의 동작이 연결 된 classfier 와 동작 모듈간에 구분이 있으며,
+classfier 에게는 일치가 있는 경우 트리거됩니다. 소프트웨어 데이터 경로에서
+tc를 사용하는 현대 세계에서 이 모델은 복잡한 패킷 처리에 대해서는 확장 되지
+않습니다. ``cls_bpf`` 에 연결 된 tc BPF 프로그램이 완전히 독립적 인 경우, 파싱
+및 액션 프로세스를 효과적으로 단일 단위로 통합 합니다.
+``cls_bpf`` 의 ``직접 행동 모드`` 덕분에, 그것은 tc 액션 결정을 반환하고,
+처리 파이프 라인을 즉시 종료합니다. 이를 통해 작업의 선형 반복을 피함 으로써
+네트워킹 데이터 경로에서 확장 가능한 프로그래밍 가능한 패킷 처리를 구현할 수
+있습니다. ``cls_bpf`` 는 이러한 고속 경로가 가능한 tc 계층의 유일한 "classifier"
+모듈 입니다.
 
-Like XDP BPF programs, tc BPF programs can be atomically updated at runtime
-via ``cls_bpf`` without interrupting any network traffic or having to restart
-services.
+XDP BPF 프로그램과 마찬가지로 tc BPF 프로그램은 네트워크 트래픽을 방해하거나
+서비스를 다시 시작하지 않고 ``cls_bpf`` 를 통해 런타임에 atomically하게 업데이트
+될 수 있습니다.
 
-Both the tc ingress and the egress hook where ``cls_bpf`` itself can be
-attached to is managed by a pseudo qdisc called ``sch_clsact``. This is a
-drop-in replacement and proper superset of the ingress qdisc since it
-is able to manage both, ingress and egress tc hooks. For tc's egress hook
-in ``__dev_queue_xmit()`` it is important to stress that it is not executed
-under the kernel's qdisc root lock. Thus, both tc ingress and egress hooks
-are executed in a lockless manner in the fast-path. In either case, preemption
-is disabled and execution happens under RCU read side.
+``cls_bpf`` 자체가 연결 될 수 있는 tc ingress 와 egress 훅은 ``sch_clsact`` 라는
+preseudo qdisc에 의해 관리됩니다. 이는 ingress 및 egress tc hook를 모두 관리
+할 수 있으므로, ingress qdisc의 drop-in 대체 및 적절한 상위 집합 입니다.
+``__dev_queue_xmit()`` 에서 tc의 egress hook의 경우 커널의 qdisc root lock 아래
+에서 실행되지 않는다고 강조하는 것이 중요합니다. 따라서, tc ingress 및 egress hook
+은 고속 경로에서 잠금없는 방식으로 실행됩니다. 두 경우 모두 선점이 비활성화되고
+RCU 읽기 측에서 실행이 발생합니다.
 
-Typically on egress there are qdiscs attached to netdevices such as ``sch_mq``,
-``sch_fq``, ``sch_fq_codel`` or ``sch_htb`` where some of them are classful
-qdiscs that contain subclasses and thus require a packet classification
-mechanism to determine a verdict where to demux the packet. This is handled
-by a call to ``tcf_classify()`` which calls into tc classifiers if present.
-``cls_bpf`` can also be attached and used in such cases. Such operation usually
-happens under the qdisc root lock and can be subject to lock contention. The
-``sch_clsact`` qdisc's egress hook comes at a much earlier point however which
-does not fall under that and operates completely independent from conventional
-egress qdiscs. Thus for cases like ``sch_htb`` the ``sch_clsact`` qdisc could
-perform the heavy lifting packet classification through tc BPF outside of the
-qdisc root lock, setting the ``skb->mark`` or ``skb->priority`` from there such
-that ``sch_htb`` only requires a flat mapping without expensive packet
-classification under the root lock thus reducing contention.
+일반적으로 egress에는 넷디바이스에 연결된 qdisc가 있으며,예를 들어 ``sch_mq``,
+``sch_fq``, ``sch_fq_codel`` 또는 ``sch_htb`` 와 같이 하위클래스 를 포함하는
+classical qdisc 인 패킷을 역다중화 판정을 결정하는 패킷 분류 메커니즘이 필요
+합니다. 이것은 tc classier를 호출하는 ``tcf_classify()`` 호출에 의해 처리
+됩니다.이러한 경우 ``cls_bpf`` 를 연결하여 사용할 수도 있습니다. 이러한 작업은
+대부분 qdisc root lock 아래에서 수행 되며 lock 경합의 영향을 받을 수 있습니다.
+``sch_clsact`` qdisc의 egress hook는 훨씬 빠르지만, 기존의 egress qdisc와는
+완전히 독립적으로 작동합니다. 따라서 ``sch_htb`` 와 같은 경우 ``sch_clsact``
+qdisc는 qdisc root lock 외부의 tc BPF를 통해 과도한 패킷 분류를 수행 할 수
+있습니다. ``skb-> mark`` 또는 ``skb-> priority`` 를 설정하면 ``sch_htb`` 는
+root lock 아래 비용이 많이 발생하는 패킷 분류 없이 평면 매핑 만 필요 하므로
+경합이 줄어 듭니다.
 
-Offloaded tc BPF programs are supported for the case of ``sch_clsact`` in
-combination with ``cls_bpf`` where the prior loaded BPF program was JITed
-from a SmartNIC driver to be run natively on the NIC. Only ``cls_bpf``
-programs operating in ``direct-action`` mode are supported to be offloaded.
-``cls_bpf`` only supports offloading a single program and cannot offload
-multiple programs. Furthermore only the ingress hook supports offloading
-BPF programs.
+오프로드 된 tc BPF 프로그램은 이전 로드 된 BPF 프로그램이 SmartNIC 드라이버
+에서 주입되어 NIC에서 기본적으로 실행되는 ``cls_bpf`` 와 함께 ``sch_clsact``
+의 경우에 지원됩니다. ``직접 실행 모드`` 에서 작동하는 ``cls_bpf`` 프로그램
+만이 오프로드 되도록 지원됩니다. ``cls_bpf`` 는 단일 프로그램의 오프로딩 만
+지원 하며 다중 프로그램을 오프로드 할 수 없습니다. 또한 ingress hook만으로
+BPF 프로그램을 오프로드 할 수 있습니다.
 
-One ``cls_bpf`` instance is able to hold multiple tc BPF programs internally.
-If this is the case, then the ``TC_ACT_UNSPEC`` program return code will
-continue execution with the next tc BPF program in that list. However, this
-has the drawback that several programs would need to parse the packet over
-and over again resulting in degraded performance.
+하나의 ``cls_bpf`` 인스턴스는 여러 tc BPF 프로그램을 내부적으로 가질수 있습
+니다. 이 경우 ``TC_ACT_UNSPEC`` 프로그램 리턴 코드는 해당 목록의 다음 tc BPF
+프로그램으로 계속 실행됩니다. 그러나 이는 여러 프로그램이 패킷을 반복해서
+구문 분석해야 성능이 저하된다는 단점이 있습니다.
 
 **BPF program return codes**
 
