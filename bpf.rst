@@ -3629,11 +3629,11 @@ BPF 프로그램을 오프로드 할 수 있습니다.
 프로그램으로 계속 실행됩니다. 그러나 이는 여러 프로그램이 패킷을 반복해서
 구문 분석해야 성능이 저하된다는 단점이 있습니다.
 
-**BPF program return codes**
+**BPF 프로그램 반환 코드들**
 
-Both the tc ingress and egress hook share the same action return verdicts
-that tc BPF programs can use. They are defined in the ``linux/pkt_cls.h``
-system header:
+tc ingress 및 egress hook는 tc BPF 프로그램이 사용할 수있는 동일한 작업
+결정 반환 공유합니다. 이 내용에 대해서는 ``linux/pkt_cls.h`` 시스템 헤더에
+정의되어 있습니다 :
 
 ::
 
@@ -3643,216 +3643,202 @@ system header:
     #define TC_ACT_STOLEN           4
     #define TC_ACT_REDIRECT         7
 
-There are a few more action ``TC_ACT_*`` verdicts available in the system
-header file which are also used in the two hooks. However, they share the
-same semantics with the ones above. Meaning, from a tc BPF perspective,
-``TC_ACT_OK`` and ``TC_ACT_RECLASSIFY`` have the same semantics, as well as
-the three ``TC_ACT_STOLEN``, ``TC_ACT_QUEUED`` and ``TC_ACT_TRAP`` opcodes.
-Therefore, for these cases we only describe ``TC_ACT_OK`` and the ``TC_ACT_STOLEN``
-opcode for the two groups.
+두개의 hook에서도 사용되는 시스템 헤더 파일에서 사용 할수 있는 몇가지 액션
+``TC_ACT_*`` 결정이 더 있습니다. 그러나 언급한 몇가지 행동은 위의 것과
+동일한 의미를 공유합니다. tc BPF 관점에서 의미는 ``TC_ACT_OK`` 와
+``TC_ACT_RECLASSIFY`` 는 세 가지 ``TC_ACT_STOLEN``, ``TC_ACT_QUEUED`` 및
+``TC_ACT_TRAP`` opcode와 동일한 의미를 가집니다. 따라서 이 경우 두 그룹에
+대한 ``TC_ACT_OK`` 및 ``TC_ACT_STOLEN`` 연산 코드만 설명합니다.
 
-Starting out with ``TC_ACT_UNSPEC``. It has the meaning of "unspecified action"
-and is used in three cases, i) when an offloaded tc BPF program is attached
-and the tc ingress hook is run where the ``cls_bpf`` representation for the
-offloaded program will return ``TC_ACT_UNSPEC``, ii) in order to continue
-with the next tc BPF program in ``cls_bpf`` for the multi-program case. The
-latter also works in combination with offloaded tc BPF programs from point i)
-where the ``TC_ACT_UNSPEC`` from there continues with a next tc BPF program
-solely running in non-offloaded case. Last but not least, iii) ``TC_ACT_UNSPEC``
-is also used for the single program case to simply tell the kernel to continue
-with the ``skb`` without additional side-effects. ``TC_ACT_UNSPEC`` is very
-similar to the ``TC_ACT_OK`` action code in the sense that both pass the
-``skb`` onwards either to upper layers of the stack on ingress or down to
-the networking device driver for transmission on egress, respectively. The
-only difference to ``TC_ACT_OK`` is that ``TC_ACT_OK`` sets ``skb->tc_index``
-based on the classid the tc BPF program set. The latter is set out of the
-tc BPF program itself through ``skb->tc_classid`` from the BPF context.
+결정 코드에 대해서 ``TC_ACT_UNSPEC`` 으로 시작합니다. 이것은 "지정되지 않은 동작"
+의 의미를 가지며 다음과 같은 세 가지 경우에 사용됩니다. i) 오프로드 된 tc BPF
+프로그램이 연결되고 오프로드 된 프로그램에 대한 ``cls_bpf`` 표현이 ``TC_ACT_UNSPEC``
+을 반환 하는 tc ingress hook이 실행되는 경우, ii) 다중 프로그램의 경우 ``cls_bpf``
+에있는 다음 tc BPF 프로그램을 계속 진행되는 경우, 후자는 오프로드 된 경우에만
+실행되는 다음 tc BPF 프로그램에서 ``TC_ACT_UNSPEC`` 이 계속되는 시점인 i)에서
+오프로드 된 tc BPF 프로그램과 함께 작동합니다. 마지막으로 중요한 것은, iii)
+``TC_ACT_UNSPEC`` 은 단일 프로그램의 경우에도 커널에 부가적인 부작용없이
+``skb`` 계속 진행 하도록 알려 주는 용도로 사용됩니다. ``TC_ACT_UNSPEC`` 은
+``TC_ACT_OK`` 결정 코드 와 매우 유사 하며, 즉, ingress 에서 스택의 상위 레이어로
+``skb`` 를 전달하거나, egress에서 전송하기 위해 네트워킹 디바이스 드라이버로
+내리는 행동을 합니다. ``TC_ACT_OK`` 의 유일한 차이점은 ``TC_ACT_OK`` 가 tc BPF
+프로그램 세트의 classid를 기반으로 ``skb->tc_index`` 를 설정 한다는 것입니다.
+후자는 BPF 컨텍스트에서 ``skb->tc_classid`` 를 통해 tc BPF 프로그램 자체에서
+설정됩니다.
 
-``TC_ACT_SHOT`` instructs the kernel to drop the packet, meaning, upper
-layers of the networking stack will never see the ``skb`` on ingress and
-similarly the packet will never be submitted for transmission on egress.
-``TC_ACT_SHOT`` and ``TC_ACT_STOLEN`` are both similar in nature with few
-differences: ``TC_ACT_SHOT`` will indicate to the kernel that the ``skb``
-was released through ``kfree_skb()`` and return ``NET_XMIT_DROP`` to the
-callers for immediate feedback, whereas ``TC_ACT_STOLEN`` will release
-the ``skb`` through ``consume_skb()`` and pretend to upper layers that
-the transmission was successful through ``NET_XMIT_SUCCESS``. The perf's
-drop monitor which records traces of ``kfree_skb()`` will therefore
-also not see any drop indications from ``TC_ACT_STOLEN`` since its
-semantics are such that the ``skb`` has been "consumed" or queued but
-certainly not "dropped".
+``TC_ACT_SHOT`` 명령은 커널에게 패킷을 버리게 하며, 즉 네트워킹 스택의
+상위 레이어는 진입시 ``skb`` 를 전혀 볼 수 없으며 유사하게 패킷은 egress에서
+전송을 위해 제출되지 않습니다. ``TC_ACT_SHOT`` 및 ``TC_ACT_STOLEN`` 은
+근본적으로 유사하지만 몇 가지 차이점이 있습니다: ``TC_ACT_SHOT`` 는
+``kfree_skb()`` 를 통해 ``skb`` 가 해제 되었고, 즉각적인 피드백을 위해
+발신자에게 ``NET_XMIT_DROP`` 를 반환하지만 ``TC_ACT_STOLEN`` 은
+``consume_skb()`` 를 통해 ``skb`` 를 해제하고 ``NET_XMIT_SUCCESS`` 를 통해
+전송이 성공했다고 상위 계층처럼 가장합니다. 따라서 ``kfree_skb()`` 의 흔적을
+기록하는 perf 모니터는 ``TC_ACT_STOLEN`` 의 버리는 표시를 보지 않으며,
+이 의미는 ``skb`` 가 "사용"되거나 대기하지만 확실히 "삭제"되지 않았기 때문에
+입니다.
 
-Last but not least the ``TC_ACT_REDIRECT`` action which is available for
-tc BPF programs as well. This allows to redirect the ``skb`` to the same
-or another's device ingress or egress path together with the ``bpf_redirect()``
-helper. Being able to inject the packet into another device's ingress or
-egress direction allows for full flexibility in packet forwarding with
-BPF. There are no requirements on the target networking device other than
-being a networking device itself, there is no need to run another instance
-of ``cls_bpf`` on the target device or other such restrictions.
+마지막으로 tc BPF 프로그램에서 사용할 수있는 ``TC_ACT_REDIRECT`` 동작도
+있습니다. 이렇게 하면 ``skb`` 를 ``bpf_redirect()`` helper와 함께 동일한
+또는 다른 장치의 ingress 또는 egress 경로로 리디렉션 할 수 있습니다.
+패킷을 다른 장치의 ingress 또는 egress 방향으로 주입 할 수 있기 때문에
+BPF를 사용한 패킷 전달에서 완전한 유연성을 얻을 수 있습니다. 네트워킹 장치
+자체가 아닌 대상 네트워킹 장치에 대한 요구 사항이 없으므로, 대상 장치에서
+``cls_bpf`` 의 다른 인스턴>스 또는 다른 제한 사항을 실행할 필요가 없습니다.
 
 **tc BPF FAQ**
 
-This section contains a few miscellaneous question and answer pairs related to
-tc BPF programs that are asked from time to time.
+이 절에는 자주 질문하는 tc BPF 프로그램과 관련된 몇 가지 질문과 대답이 있습니다.
 
-* **Question:** What about ``act_bpf`` as a tc action module, is it still relevant?
-* **Answer:** Not really. Although ``cls_bpf`` and ``act_bpf`` share the same
-  functionality for tc BPF programs, ``cls_bpf`` is more flexible since it is a
-  proper superset of ``act_bpf``. The way tc works is that tc actions need to be
-  attached to tc classifiers. In order to achieve the same flexibility as ``cls_bpf``,
-  ``act_bpf`` would need to be attached to the ``cls_matchall`` classifier. As the
-  name says, this will match on every packet in order to pass them through for attached
-  tc action processing. For ``act_bpf``, this is will result in less efficient packet
-  processing than using ``cls_bpf`` in ``direct-action`` mode directly. If ``act_bpf``
-  is used in a setting with other classifiers than ``cls_bpf`` or ``cls_matchall``
-  then this will perform even worse due to the nature of operation of tc classifiers.
-  Meaning, if classifier A has a mismatch, then the packet is passed to classifier
-  B, reparsing the packet, etc, thus in the typical case there will be linear
-  processing where the packet would need to traverse N classifiers in the worst
-  case to find a match and execute ``act_bpf`` on that. Therefore, ``act_bpf`` has
-  never been largely relevant. Additionally, ``act_bpf`` does not provide a tc
-  offloading interface either compared to ``cls_bpf``.
+* **질문:** 액션 모듈로 ``act_bpf`` 는 무엇입니까? 여전히 관련이 있습니까?
+* **답변:** 그렇지 않습니다. ``cls_bpf`` 와 ``act_bpf`` 는 tc BPF 프로그램에
+  대해 동일한 기능을 공유하지만 ``cls_bpf`` 는 ``act_bpf`` 의 적절한 수퍼 세트
+  이며, 더 유연합니다. tc가 작동하는 방식은 tc 액션을 tc 분류 자에 연결되어야
+  한다는 것입니다. ``cls_bpf`` 와 동일한 유연성을 얻으려면 ``act_bpf`` 를
+  ``cls_matchall`` 분류 자에 연결 해야합니다. 이름에서 알 수 있듯이, 이것은
+  연결 된 tc 작업 처리를 위해 모든 패킷에서 일치합니다. ``act_bpf`` 의 경우
+  ``직접 실행 모드`` 에서 ``cls_bpf`` 를 직접 사용하는 것보다 패킷 처리가
+  덜 효율적 입니다. ``act_bpf`` 가 ``cls_bpf`` 또는 ``cls_matchall`` 이 아닌
+  다른 분류 자의 설정에서 사용 되면, tc 분류 자의 동작 특성으로 인해 더 나쁜
+  성능을 보입니다. 분류자 A가 불일치 하는 경우, 패킷은 분류자 B로 전달되며,
+  패킷등을 다시 패싱 되므로, 일반적인 경우에 패킷은 이>러한 일치를 찾아
+  ``act_bpf`` 를 실행하기 위해 최악의 경우 N개의 분류기를 통과해야 하는 선형
+  처리가 있게 됩니다. 따라서 ``act_bpf`` 는 그다지 중요하지 않습니다. 또한
+  ``act_bpf`` 는 ``cls_bpf`` 와 비교하여 tc 오프 로딩 인터페이스를 제공하지
+  않습니다.
 
 ..
 
-* **Question:** Is it recommended to use ``cls_bpf`` not in ``direct-action`` mode?
-* **Answer:** No. The answer is similar to the one above in that this is otherwise
-  unable to scale for more complex processing. tc BPF can already do everything needed
-  by itself in an efficient manner and thus there is no need for anything other than
-  ``direct-action`` mode.
+* **질문:** ``직접 행동 모드`` 가 아닌 ``cls_bpf`` 를 사용하는 것이 좋습니까?
+* **답변:** 아니요. 답변은 복잡한 처리를 위해 확장 할 수 없다는 점에서 위의 것과
+  비슷합니다. tc BPF는 이미 효율적으로 자체적으로 필요한 모든 것을 수행 할 수
+  있으므로 ``직접 실행 모드`` 이외의 다른 기능은 필요하지 않습니다.
 
 ..
 
-* **Question:** Is there any performance difference in offloaded ``cls_bpf`` and
-  offloaded XDP?
-* **Answer:** No. Both are JITed through the same compiler in the kernel which
-  handles the offloading to the SmartNIC and the loading mechanism for both is
-  very similar as well. Thus, the BPF program gets translated into the same target
-  instruction set in order to be able to run on the NIC natively. The two tc BPF
-  and XDP BPF program types have a differing set of features, so depending on the
-  use case one might be picked over the other due to availability of certain helper
-  functions in the offload case, for example.
+* **질문:** 오프로드 된 ``cls_bpf`` 와 오프로드 된 XDP에서 성능 차이가 있습니까?
+* **답변:** 아니요. 둘 다 SmartNIC에 대한 오프로드를 처리하는 커널의 동일한
+  컴파일러를 통해 주입이 됩니다. 두 가지 모두의 로딩 메커니즘도 비슷합니다.
+  따라서 BPF 프로그램은 NIC에서 기본적으로 실행될 수 있도록 동일한 대상 명령
+  세트로 변환됩니다. 두 개의 tc BPF 및 XDP BPF 프로그램 유형은 서로 다른 기능
+  세트를 가지므로 사용 사례에 따라 다른 서비스 유형 (예: 오프로드 경우)의
+  가용성으로 인해 다른 서비스 유형을 선택할 수 있습니다.
 
-**Use cases for tc BPF**
+**tc BPF의 사용 사례**
 
-Some of the main use cases for tc BPF programs are presented in this subsection.
-Also here, the list is non-exhaustive and given the programmability and efficiency
-of tc BPF, it can easily be tailored and integrated into orchestration systems
-in order to solve very specific use cases. While some use cases with XDP may overlap,
-tc BPF and XDP BPF are mostly complementary to each other and both can also be
-used at the same time or one over the other depending which is most suitable for a
-given problem to solve.
+tc BPF 프로그램의 주요 사용 사례 중 일부 내용이 하위 절에 나와 있습니다.
+또한 여기에서는 목록이 전체적이지는 않지만, 프로그래밍 가능성 과 효율성을
+감안할 때 매우 특정한 사용자 사례를 해결하기 위해 오케스트레이션 시스템에
+맞춤화되고 통합될 수 있습니다. XDP 사용 사례가 일부 겹칠 수 있지만 tc BPF와
+XDP BPF는 상호 보완적이며 동시에 해결할 주어진 문제에 가장 적합한 두 가지
+방법을 주어진 문제를 풀기에 가장 적합하게 동시에 또는 한 번에 사용할 수
+있습니다.
 
-* **Policy enforcement for containers**
+* **컨테이너에 대한 정책 시행**
 
-  One application which tc BPF programs are suitable for is to implement policy
-  enforcement, custom firewalling or similar security measures for containers or
-  pods, respectively. In the conventional case, container isolation is implemented
-  through network namespaces with veth networking devices connecting the host's
-  initial namespace with the dedicated container's namespace. Since one end of
-  the veth pair has been moved into the container's namespace whereas the other
-  end remains in the initial namespace of the host, all network traffic from the
-  container has to pass through the host-facing veth device allowing for attaching
-  tc BPF programs on the tc ingress and egress hook of the veth. Network traffic
-  going into the container will pass through the host-facing veth's tc egress
-  hook whereas network traffic coming from the container will pass through the
-  host-facing veth's tc ingress hook.
+  tc BPF 프로그램이 적합한 한 응용 프로그램은 정책 집행, 사용자 정의 방화벽
+  또는 컨테이너 또는 포드에 대한 유사>한 보안 대책을 각각 구현하는 것입니다.
+  이전의 경우, 컨테이너 격리는 호스트의 초기 네임 스페이스와 전용 컨테이너의
+  네임 스페이스를 연결하는 네트워크 장치가 있는 네트워크 네임 스페이스를
+  통해 구현됩니다. veth 인터페이스 쌍의 한쪽 끝은 컨테이너의 네임 스페이스로
+  이동 되었지만 다른 쪽 끝은 호스트의 초기 네임 스페이스에 남아 있기 때문에,
+  컨테이너로부터의 모든 네트워크 트래픽은 호스트 측면의 tc ingress 및
+  egress hook에 연결 가능한 veth 디바이스를 통과 해야 합니다. 컨테이너로
+  들어오는 네트워크 트래픽은 호스트를 향한 경로로 전달되지만, 컨테이너에서
+  들어오는 네트워크 트래픽은 호스트를 향한 경로로 전달됩니다. 컨테이너로
+  들어오는 네트워크 트래픽은 호스트 측면 veth의 egress hook을 통과하지만
+  컨테이너에서 오는 네트워크 트래픽은 호스트 측면 veth의 ingress hook을
+  통과합니다.
 
-  For virtual devices like veth devices XDP is unsuitable in this case since the
-  kernel operates solely on a ``skb`` here and generic XDP has a few limitations
-  where it does not operate with cloned ``skb``'s. The latter is heavily used
-  from the TCP/IP stack in order to hold data segments for retransmission where
-  the generic XDP hook would simply get bypassed instead. Moreover, generic XDP
-  needs to linearize the entire ``skb`` resulting in heavily degraded performance.
-  tc BPF on the other hand is more flexible as it specializes on the ``skb``
-  input context case and thus does not need to cope with the limitations from
-  generic XDP.
+  veth 장치와 같은 가상 장치의 경우, XDP는 커널이 여기의 ``skb`` 에서만
+  작동하고 일반 XDP는 복제 된 ``skb`` 와 함께 작동하지 않는 몇 가지 제한
+  사항이 있으므로 이 경우 적합하지 않습니다. 후자는 generic XDP hook이
+  단순히 우회되는 재전송을 위한 데이터 세그먼트를 유지하기 위해 TCP/IP
+  스택에서 많이 사용됩니다. 또한 generic XDP는 전체 ``skb`` 를 선형화 해야
+  성능이 크게 저하됩니다. 반면에 tc BPF는 ``skb`` 입력 컨텍스트 케이스를
+  전문으로 하므로 더 유연하며, 따라서 generic XDP의 한계에 염두할 필요가
+  없습니다.
 
 ..
 
-* **Forwarding and load-balancing**
+* **포워딩 그리고 로드벨런싱**
 
-  The forwarding and load-balancing use case is quite similar to XDP, although
-  slightly more targeted towards east-west container workloads rather than
-  north-south traffic (though both technologies can be used in either case).
-  Since XDP is only available on ingress side, tc BPF programs allow for
-  further use cases that apply in particular on egress, for example, container
-  based traffic can already be NATed and load-balanced on the egress side
-  through BPF out of the initial namespace such that this is done transparent
-  to the container itself. Egress traffic is already based on the ``sk_buff``
-  structure due to the nature of the kernel's networking stack, so packet
-  rewrites and redirects are suitable out of tc BPF. By utilizing the
-  ``bpf_redirect()`` helper function, BPF can take over the forwarding logic
-  to push the packet either into the ingress or egress path of another networking
-  device. Thus, any bridge-like devices become unnecessary to use as well by
-  utilizing tc BPF as forwarding fabric.
+  포워딩 및로드 밸런싱 사용 사례는 서버와 클라이언트 간의 트래픽 보다는
+  컨테이너 와 컨테이너 사이의 워크로드를 타겟으로 하며, (두 기술이 어느
+  경우에도 사용될 수 있지만,) XDP 와 매우 유사합니다. XDP는 ingress 측에서만
+  사용할 수 있으므로 tc BPF 프로그램은 특히 egress에서 적용되는 추가 사용
+  사례를 허용 하며, 예를 들어 컨테이너 기반 트래픽은 초기 네임 스페이스에서
+  BPF를 통해 송신 측에서 이미 NAT된 및 로드 밸런싱 될 수 있으며, 이것은
+  컨테이너 자체에 투명하게 이루어 집니다. egress 트래픽은 커널의 네트워킹
+  스택의 특성 때문에 ``sk_buff`` 구조체를 기반으로 하므로 패킷 재작성 및
+  리디렉션는 tc BPF에서 적합합니다. BPF는 ``bpf_redirect()`` helper 함수를
+  활용하여 포워딩 로직를 대신 받아 패킷을 다른 네트워킹 장치의 ingress 또는
+  egress 경로로 푸시 할 수 있습니다. 따라서 모든 브리지 형 장치는
+  forwarding fabric으로 tc BPF 활용으로 불필요하게 됩니다
 
 ..
 
-* **Flow sampling, monitoring**
+* **흐름 샘플링, 모니터링**
 
-  Like in XDP case, flow sampling and monitoring can be realized through a
-  high-performance lockless per-CPU memory mapped perf ring buffer where the
-  BPF program is able to push custom data, the full or truncated packet
-  contents, or both up to a user space application. From the tc BPF program
-  this is realized through the ``bpf_skb_event_output()`` BPF helper function
-  which has the same function signature and semantics as ``bpf_xdp_event_output()``.
-  Given tc BPF programs can be attached to ingress and egress as opposed to
-  only ingress in XDP BPF case plus the two tc hooks are at the lowest layer
-  in the (generic) networking stack, this allows for bidirectional monitoring
-  of all network traffic from a particular node. This might be somewhat related
-  to the cBPF case which tcpdump and Wireshark makes use of, though, without
-  having to clone the ``skb`` and with being a lot more flexible in terms of
-  programmability where, for example, BPF can already perform in-kernel
-  aggregation rather than pushing everything up to user space as well as
-  custom annotations for packets pushed into the ring buffer. The latter is
-  also heavily used in Cilium where packet drops can be further annotated
-  to correlate container labels and reasons for why a given packet had to
-  be dropped (such as due to policy violation) in order to provide a richer
-  context.
+  XDP의 경우와 마찬가지로 플로우 샘플링 및 모니터링은 BPF 프로그램이 맞춤
+  데이터, 전체 또는 절단 된 패킷 내용, >또는 사용자 공간 응용 프로그램에
+  이르기까지 푸시 할 수있는 고성능의 잠금없는 CPU 당 메모리 매핑 된
+  perf ring 버퍼를 통해 실현 될 수 있습니다. tc BPF 프로그램에서 이것은
+  ``bpf_xdp_event_output()`` 과 같은 대표 함수 와 의미를 가진
+  ``bpf_skb_event_output()`` BPF help 함수를 통해 실현됩니다. 주어진
+  tc BPF 프로그램은 XDP BPF 사용 사례에서 ingress 만 아닌 ingress와
+  egress에 연결 될수 있으며, 두 개의 tc 후크는 (일반) 네트워킹 스택의
+  가장 낮은 계층에 있으며,이를 통해 특정 노드의 모든 네트워크 트래픽을
+  양방향 모니터링 할 수 있습니다. 이것은 tcpdump와 wireshark가 ``skb``
+  를 복제할 필요 없으며, 프로그래밍 가능성 측면에서 보다 유연한 cBPF 사용
+  사례와 다소 관련될 수 있으며, 예를 들어 BPF는 이미 링 버퍼에 푸시 된
+  패킷에 대해 사용자 공간 뿐만 아니라 사용자 annotations까지 모두를
+  푸시하는 대신에 커널 내 aggregation을 수행 할 수 있습니다. 후자는 또한
+  Cilium에서 많이 사용되는데, 패킷 레이블에 컨테이너 레이블을 연관
+  시키려면 패킷 주석을 추가로 주석을 붙여야하며, 다양한 패킷을 처리
+  해야하는 이유(정책 위반 등) 때문에 다양한 context을 제공 해야합니다.
 
 ..
 
-* **Packet scheduler pre-processing**
+* **패킷 스케줄러 사전 처리**
 
-  The ``sch_clsact``'s egress hook which is called ``sch_handle_egress()``
-  runs right before taking the kernel's qdisc root lock, thus tc BPF programs
-  can be utilized to perform all the heavy lifting packet classification
-  and mangling before the packet is transmitted into a real full blown
-  qdisc such as ``sch_htb``. This type of interaction of ``sch_clsact``
-  with a real qdisc like ``sch_htb`` coming later in the transmission phase
-  allows to reduce the lock contention on transmission since ``sch_clsact``'s
-  egress hook is executed without taking locks.
+  ``sch_clsact`` 의 egress hook 인 ``sch_handle_egress()`` 는 커널의
+  qdisc 루트 잠금을 취하기 바로 전에 실행 되며, 따라서 tc BPF 프로그램은
+  패킷이 ``sch_htb`` 와 같은 진짜 완전한 qdisc로 전송되기 전에
+  heavy lifting packet classification 및 mangling을 동작하는 데 사용될
+  수 있습니다. 이러한 ``sch_clsact`` 와 ``sch_htb`` 와 같은 실제 qdisc와의
+  상호 작용은 나중에 ``sch_clsact`` 의 egress hook가 잠금을 사용하지 않고
+  실행되기 때문에 전송 단계에서 나중에 발생하는 lock contention을 줄일 수
+  있습니다.
 
 ..
 
-One concrete example user of tc BPF but also XDP BPF programs is Cilium.
-Cilium is open source software for transparently securing the network
-connectivity between application services deployed using Linux container
-management platforms like Docker and Kubernetes and operates at Layer 3/4
-as well as Layer 7. At the heart of Cilium operates BPF in order to
-implement the policy enforcement as well as load balancing and monitoring.
+tc BPF뿐만 아니라 XDP BPF 프로그램의 한 구체적인 예는 Cilium입니다.
+Cilium은 Docker 및 Kubernetes와 같은 Linux 컨테이너 관리 플랫폼을
+사용하여 배포 된 응용 프로그램 서비스 간의 네트워크 연결을 투명하게
+보호 하기위한 오픈 소스 소프트웨어이며 Layer 3 및 Layer 7에서 작동
+합니다. Cilium의 핵심은 BPF를 사용하여 정책 시행과 로드 밸런싱 및
+모니터링을 구현합니다.
 
 * Slides: https://www.slideshare.net/ThomasGraf5/dockercon-2017-cilium-network-and-application-security-with-bpf-and-xdp
 * Video: https://youtu.be/ilKlmTDdFgk
 * Github: https://github.com/cilium/cilium
 
-**Driver support**
+**드라이버 지원**
 
-Since tc BPF programs are triggered from the kernel's networking stack
-and not directly out of the driver, they do not require any extra driver
-modification and therefore can run on any networking device. The only
-exception listed below is for offloading tc BPF programs to the NIC.
+tc BPF 프로그램은 커널의 네트워킹 스택에서 시작되고 드라이버에서
+직접 시작되지 않으므로 추가 드라이버 수정이 필요하지 않으므로
+모든 네트워킹 장치에서 실행할 수 있습니다. 아래 나열된 유일한
+예외는 tc BPF 프로그램을 NIC에 오프 로딩하는 것을 뜻합니다.
 
-**Drivers supporting offloaded tc BPF**
+**오프로드 된 tc BPF를 지원하는 드라이버**
 
 * **Netronome**
 
   * nfp [2]_
 
-Note that also here examples for writing and loading tc BPF programs are
-included in the toolchain section under the respective tools.
+tc BPF 프로그램을 작성하고 로딩하는 예제는 각 도구 아래의 toolchain
+섹션에 포함되어 있습니다.
 
 .. _bpf_users:
 
