@@ -3842,55 +3842,53 @@ tc BPF 프로그램을 작성하고 로딩하는 예제는 각 도구 아래의 
 
 .. _bpf_users:
 
-Further Reading
-===============
+더 읽을 거리
+============
 
-Mentioned lists of docs, projects, talks, papers, and further reading
-material are likely not complete. Thus, feel free to open pull requests
-to complete the list.
+문서, 프로젝트, 대담, 논문 및 추가 자료의 언급 목록은 완전하지 않을
+수 있습니다. 따라서, 목록을 완료하기 위해 자유롭게 pull 요청을 열어
+주시기 바랍니다.
 
-Kernel Developer FAQ
---------------------
+커널 개발자 자주 묻는 질문
+--------------------------
 
-Under ``Documentation/bpf/``, the Linux kernel provides two FAQ files that
-are mainly targeted for kernel developers involved in the BPF subsystem.
+``Documentation/bpf/`` 에서 Linux 커널은 주로 BPF 하위 시스템과 관련
+된 커널 개발자를 대상으로하는 두 개의 FAQ 파일을 제공합니다.
 
-* **BPF Devel FAQ:** this document provides mostly information around patch
-  submission process as well as BPF kernel tree, stable tree and bug
-  reporting workflows, questions around BPF's extensibility and interaction
-  with LLVM and more.
+* **BPF Devel 자주 묻는 질문:** 이 문서는 주로 패치 제출 과정 주변
+  정보와 BPF 커널 트리, 안정 트리 및 버그보고 워크 플로우, LLVM 등
+  을 통해 BPF의 확장성 및 상호 작용의 주변에 관련된 질문을 제공합
+  니다.
 
   https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/bpf/bpf_devel_QA.rst
 
 ..
 
-* **BPF Design FAQ:** this document tries to answer frequently asked questions
-  around BPF design decisions related to the instruction set, verifier,
-  calling convention, JITs, etc.
+* **BPF Design 자주 묻는 질문:** 이 문서는 명령어 세트, 검증에 관련된
+  BPF 설계 결정, 호출 규칙, JITs 등 주변 자주 묻는 질문에 대한 답변을
+  하려고 합니다.
 
   https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/bpf/bpf_design_QA.rst
 
-Projects using BPF
-------------------
+BPF를 사용하는 프로젝트
+-----------------------
 
-The following list includes a selection of open source projects making
-use of BPF respectively provide tooling for BPF. In this context the eBPF
-instruction set is specifically meant instead of projects utilizing the
-legacy cBPF:
+다음 목록에는 BPF를 사용하는 오픈 소스 프로젝트 중 하나가 포함되어 있으며
+각각 BPF에 대한 도구을 제공합니다. 이 문맥에서 eBPF 명령어 세트는 기존
+cBPF를 활용하는 프로젝트 대신 특별히 의미가 있습니다:
 
-**Tracing**
+**추적**
 
 * **BCC**
 
-  BCC stands for BPF Compiler Collection and its key feature is to provide
-  a set of easy to use and efficient kernel tracing utilities all based
-  upon BPF programs hooking into kernel infrastructure based upon kprobes,
-  kretprobes, tracepoints, uprobes, uretprobes as well as USDT probes. The
-  collection provides close to hundred tools targeting different layers
-  across the stack from applications, system libraries, to the various
-  different kernel subsystems in order to analyze a system's performance
-  characteristics or problems. Additionally, BCC provides an API in order
-  to be used as a library for other projects.
+  BCC는 BPF Compiler Collection의 약자로, 핵심 기능은 kprobes, kretprobes,
+  tracepoints, uprobes, uretprobes 및 사용자 레벨에서 정적으로 정의 된
+  추적(USDT) probe를 기반으로하는 커널 인프라에 BPF 프로그램을 연결하여
+  사용하기 쉽고 효율적인 커널 추적 유틸리티 세트를 제공하는 것입니다.
+  이 컬렉션은 응용 프로그램, 시스템 라이브러리, 다양한 커널 하위 시스템에
+  이르기까지 스택의 여러 계층을 대상으로하는 수백 가지 도구를 제공하여
+  시스템의 성능 특성 또는 문제를 분석합니다. 또한 BCC는 다른 프로젝트의
+  라이브러리로 사용하기 위해 API를 제공합니다.
 
   https://github.com/iovisor/bcc
 
@@ -3898,11 +3896,10 @@ legacy cBPF:
 
 * **bpftrace**
 
-  bpftrace is a DTrace-style dynamic tracing tool for Linux and uses LLVM
-  as a back end to compile scripts to BPF-bytecode and makes use of BCC
-  for interacting with the kernel's BPF tracing infrastructure. It provides
-  a higher-level language for implementing tracing scripts compared to
-  native BCC.
+  bpftrace는 Linux 용 DTrace 스타일의 동적 추적 도구이며 LLVM을 백엔드로
+  사용하여 스크립트를 BPF 바이트 코드로 컴파일하고, BCC를 사용하여 커널의
+  BPF 추적 인프라와 상호 작용합니다.원시 BCC와 비교하여 추적 스크립트를
+  구현하기 위한 고급 언어를 제공합니다.
 
   https://github.com/ajor/bpftrace
 
@@ -3910,11 +3907,10 @@ legacy cBPF:
 
 * **perf**
 
-  The perf tool which is developed by the Linux kernel community as
-  part of the kernel source tree provides a way to load tracing BPF
-  programs through the conventional perf record subcommand where the
-  aggregated data from BPF can be retrieved and post processed in
-  perf.data for example through perf script and other means.
+  Linux 커널 커뮤니티에서 커널 소스 트리의 일부로 개발 한 perf 도구는
+  BPF의 수집된 된 데이터를 검색하고 처리 할 수있는 기존의 perf 레코드
+  하위 명령을 통해 추적 BPF 프로그램을 로드하는 방법을 제공 하며,
+  예를 들어 perf 스크립트 및 다른 방법을 통해 perf.data에 저장됩니다.
 
   https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/perf
 
@@ -3922,26 +3918,23 @@ legacy cBPF:
 
 * **ply**
 
-  ply is a tracing tool that follows the 'Little Language' approach of
-  yore, and compiles ply scripts into Linux BPF programs that are attached
-  to kprobes and tracepoints in the kernel. The scripts have a C-like syntax,
-  heavily inspired by DTrace and by extension awk. ply keeps dependencies
-  to very minimum and only requires flex and bison at build time, only libc
-  at runtime.
+  ply는 yore의 'Little Language'접근 방식을 따르는 추적 도구이며 커널의
+  kprobes 및 tracepoint에 연결된 Linux BPF 프로그램에 ply 스크립트를
+  컴파일합니다. 스크립트는 DTrace와 확장 awk에 크게 영향을받은 C와
+  유사한 구문을 사용합니다. ply는 의존성을 매우 최소한으로 유지하고
+  빌드시 flex 및 bison 만 필요하며 런타임에는 libc 만 필요합니다.
 
   https://github.com/wkz/ply
 
 ..
 
 * **systemtap**
-
-  systemtap is a scripting language and tool for extracting, filtering and
-  summarizing data in order to diagnose and analyze performance or functional
-  problems. It comes with a BPF back end called stapbpf which translates
-  the script directly into BPF without the need of an additional compiler
-  and injects the probe into the kernel. Thus, unlike stap's kernel modules
-  this does neither have external dependencies nor requires to load kernel
-  modules.
+  
+  systemtap은 성능 또는 기능적 문제를 진단하고 분석하기 위해 데이터를
+  추출, 필터링 및 요약하기위한 스크립트 언어 및 도구입니다. stapbpf라는
+  BPF 백엔드는 추가 컴파일러가 필요없이 스크립트를 BPF로 직접 변환하고
+  프로브를 커널에 주입합니다. 따라서 stap의 커널 모듈과 달리 외부
+  종속성이 없으며, 커널 모듈을 따로 로드 할 필요도 없습니다.
 
   https://sourceware.org/git/gitweb.cgi?p=systemtap.git;a=summary
 
@@ -3949,11 +3942,11 @@ legacy cBPF:
 
 * **PCP**
 
-  Performance Co-Pilot (PCP) is a system performance and analysis framework
-  which is able to collect metrics through a variety of agents as well as
-  analyze collected systems' performance metrics in real-time or by using
-  historical data. With pmdabcc, PCP has a BCC based performance metrics
-  domain agent which extracts data from the kernel via BPF and BCC.
+  Performance Co-Pilot (PCP)은 수집 된 시스템의 성능 측정을 실시간으로
+  분석하거나 기록 데이터를 사용하여 다양한 에이전트를 통해 측정을 수집
+  할 수있는 시스템 성능 및 분석 프레임 워크입니다. pmdabcc를 사용하면
+  PCP에는 BPF 및 BCC를 통해 커널에서 데이터를 추출하는 BCC 기반 성능
+  측정 도메인 에이전트가 있습니다.
 
   https://github.com/performancecopilot/pcp
 
@@ -3961,27 +3954,27 @@ legacy cBPF:
 
 * **Weave Scope**
 
-  Weave Scope is a cloud monitoring tool collecting data about processes,
-  networking connections or other system data by making use of BPF in combination
-  with kprobes. Weave Scope works on top of the gobpf library in order to load
-  BPF ELF files into the kernel, and comes with a tcptracer-bpf tool which
-  monitors connect, accept and close calls in order to trace TCP events.
+  Weave Scope는 kprobes와 함께 BPF를 사용하여 프로세스, 네트워킹 연결
+  또는 기타 시스템 데이터에 대한 데이터를 수집하는 클라우드 모니터링
+  도구입니다. Weave Scope는 BPF ELF 파일을 커널에 로드하기 위해
+  gobpf 라이브러리의 맨 위에서 작동하며 TCP 이벤트를 추적하기 위해 연결
+  , 승인 및 닫기 호출을 모니터링하는 tcptracer-bpf 도구와 함께 제공됩니다.
 
   https://github.com/weaveworks/scope
 
 ..
 
-**Networking**
+**네트워킹**
 
 * **Cilium**
 
-  Cilium provides and transparently secures network connectivity and load-balancing
-  between application workloads such as application containers or processes. Cilium
-  operates at Layer 3/4 to provide traditional networking and security services
-  as well as Layer 7 to protect and secure use of modern application protocols
-  such as HTTP, gRPC and Kafka. It is integrated into orchestration frameworks
-  such as Kubernetes and Mesos, and BPF is the foundational part of Cilium that
-  operates in the kernel's networking data path.
+  Cilium은 응용 프로그램 컨테이너 또는 프로세스와 같은 응용 프로그램 작업
+  부하간에 네트워크 연결 및 로드 벨런스 조정을 제공하고 투명하게 보호합니다.
+  Cilium은 레이어 3/4에서 작동하여 기존 네트워킹 및 보안 서비스 뿐만 아니라
+  레이어 7을 제공하여 HTTP, gRPC 및 Kafka와 같은 최신 응용 프로그램 프로토콜의
+  보호 및 보안을 유지합니다. Kubernetes 및 Mesos와 같은 오케스트레이션 프레임
+  워크에 통합되어 있으며, BPF는 커널의 네트워킹 데이터 경로에서 작동하는
+  Cilium의 기본 부분입니다.
 
   https://github.com/cilium/cilium
 
@@ -3989,11 +3982,10 @@ legacy cBPF:
 
 * **Suricata**
 
-  Suricata is a network IDS, IPS and NSM engine, and utilizes BPF as well as XDP
-  in three different areas, that is, as BPF filter in order to process or bypass
-  certain packets, as a BPF based load balancer in order to allow for programmable
-  load balancing and for XDP to implement a bypass or dropping mechanism at high
-  packet rates.
+  Suricata는 네트워크 IDS, IPS 및 NSM 엔진이며, BPF를 기반으로 하는 로드 밸런서
+  로서 특정 패킷을 처리하거나, 우회하기 위해 BPF 필터로서 프로그래밍 가능한
+  세가지 영역에서 BPF와 XDP를 활용합니다. 로드 밸런싱 및 XDP가 높은 패킷 속도로
+  바이 패스 또는 drop 메커니즘을 구현할 수 있습니다.
 
   http://suricata.readthedocs.io/en/latest/capture-hardware/ebpf-xdp.html
 
@@ -4003,10 +3995,10 @@ legacy cBPF:
 
 * **systemd**
 
-  systemd allows for IPv4/v6 accounting as well as implementing network access
-  control for its systemd units based on BPF's cgroup ingress and egress hooks.
-  Accounting is based on packets / bytes, and ACLs can be specified as address
-  prefixes for allow / deny rules. More information can be found at:
+  systemd는 IPv4/v6 주소을 허용하고, BPF의 cgroup ingress 및 egress hook을
+  기반으로하는 systemd 장치에 대한 네트워크 액세스 제어를 구현합니다.
+  주소는 패킷/바이트를 기반으로하며 허용/거부 규칙에 대한 주소 접두어로
+  ACL을 지정할 수 있습니다. 자세한 정보는 다음에서 찾을 수 있습니다 :
 
   http://0pointer.net/blog/ip-accounting-and-access-lists-with-systemd.html
 
@@ -4016,10 +4008,10 @@ legacy cBPF:
 
 * **iproute2**
 
-  iproute2 offers the ability to load BPF programs as LLVM generated ELF files
-  into the kernel. iproute2 supports both, XDP BPF programs as well as tc BPF
-  programs through a common BPF loader backend. The tc and ip command line
-  utilities enable loader and introspection functionality for the user.
+  iproute2는 LLVM이 ELF 파일을 커널에 생성 할 때 BPF 프로그램을 로드하는
+  기능을 제공합니다. iproute2는 일반적인 BPF 로더 백엔드를 통해 tc BPF
+  프로그램뿐만 아니라 XDP BPF 프로그램도 지원합니다. tc 및 ip 명령 행
+  유틸리티는 사용자에게 로더 및 자가 검사 기능을 사용을 가능하게 합니다.
 
   https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/
 
@@ -4027,26 +4019,26 @@ legacy cBPF:
 
 * **p4c-xdp**
 
-  p4c-xdp presents a P4 compiler backend targeting BPF and XDP. P4 is a domain
-  specific language describing how packets are processed by the data plane of
-  a programmable network element such as NICs, appliances or switches, and with
-  the help of p4c-xdp P4 programs can be translated into BPF C programs which
-  can be compiled by clang / LLVM and loaded as BPF programs into the kernel
-  at XDP layer for high performance packet processing.
+  p4c-xdp는 BPF 및 XDP를 대상으로하는 P4 컴파일러 백엔드를 제공합니다.
+  P4는 NIC, 어플라이언스 또는 스위치와 같은 프로그램 가능한 네트워크
+  요소의 데이터 플레인에 의해 패킷이 처리되는 방법을 설명하고 p4c-xdp의
+  도움으로 도메인 에 따른 언어입니다. P4 프로그램은 다음에 의해 컴파일
+  될 수 있는 BPF C 프로그램으로 변환 될 수 있습니다. clang/LLVM을 사용
+  하고 고성능 패킷 처리를 위해 XDP 계층의 커널에 BPF 프로그램으로 로드
+  됩니다.
 
   https://github.com/vmware/p4c-xdp
 
 ..
 
-**Others**
+**기타**
 
 * **LLVM**
 
-  clang / LLVM provides the BPF back end in order to compile C BPF programs
-  into BPF instructions contained in ELF files. The LLVM BPF back end is
-  developed alongside with the BPF core infrastructure in the Linux kernel
-  and maintained by the same community. clang / LLVM is a key part in the
-  toolchain for developing BPF programs.
+  clang/LLVM은 C BPF 프로그램을 ELF 파일에 포함 된 BPF 명령어로 컴파일하기
+  위해 BPF 백엔드를 제공합니다. LLVM BPF 백엔드는 Linux 커널의 BPF 핵심
+  인프라와 함께 개발되며 동일한 커뮤니티에서 관리합니다. clang/LLVM은
+  BPF 프로그램 개발을 위한 툴체인의 핵심 부분입니다.
 
   https://llvm.org/
 
@@ -4054,10 +4046,10 @@ legacy cBPF:
 
 * **libbpf**
 
-  libbpf is a generic BPF library which is developed by the Linux kernel
-  community as part of the kernel source tree and allows for loading and
-  attaching BPF programs from LLVM generated ELF files into the kernel.
-  The library is used by other kernel projects such as perf and bpftool.
+  libbpf는 커널 소스 트리의 일부로 Linux 커널 커뮤니티에서 개발 한 일반
+  BPF 라이브러리이며, LLVM에서 생성 된 ELF 파일의 BPF 프로그램을 로드하여
+  커널에 연결 할 수 있습니다. 라이브러리는 perf 및 bpftool과 같은
+  다른 커널 프로젝트에서 사용됩니다.
 
   https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/lib/bpf
 
@@ -4065,13 +4057,12 @@ legacy cBPF:
 
 * **bpftool**
 
-  bpftool is the main tool for introspecting and debugging BPF programs
-  and BPF maps, and like libbpf is developed by the Linux kernel community.
-  It allows for dumping all active BPF programs and maps in the system,
-  dumping and disassembling BPF or JITed BPF instructions from a program
-  as well as dumping and manipulating BPF maps in the system. bpftool
-  supports interaction with the BPF filesystem, loading various program
-  types from an object file into the kernel and much more.
+  bpftool은 BPF 프로그램과 BPF 맵을 자가 검사 하고 디버깅 하기위한 주요
+  도구이며, libbpf는 리눅스 커널 커뮤니티에 의해 개발되었습니다. 시스템의
+  모든 활성 BPF 프로그램 및 맵을 덤프하고 프로그램에서 BPF 또는 주입된
+  BPF 명령어를 덤프 및 역어셈블 하고 시스템의 BPF 맵을 덤프 및 조작 할수
+  있습니다. bpftool은 BPF 파일 시스템과의 상호 작용을 지원하며 객체 파일
+  에서 커널에 다양한 프로그램 타입을 로드 합니다.
 
   https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/bpf/bpftool
 
@@ -4079,8 +4070,8 @@ legacy cBPF:
 
 * **gobpf**
 
-  gobpf provides go bindings for the bcc framework as well as low-level routines in
-  order to load and use BPF programs from ELF files.
+  gobpf는 ELF 파일에서 BPF 프로그램을 로드하고 사용하기 위해 저수준 루틴
+  뿐 아니라 bcc 프레임 워크에 대한 바인딩을 제공합니다.
 
   https://github.com/iovisor/gobpf
 
@@ -4088,10 +4079,9 @@ legacy cBPF:
 
 * **ebpf_asm**
 
-  ebpf_asm provides an assembler for BPF programs written in an Intel-like assembly
-  syntax, and therefore offers an alternative for writing BPF programs directly in
-  assembly for cases where programs are rather small and simple without needing the
-  clang / LLVM toolchain.
+  ebpf_asm은 Intel 계열 어셈블리 구문으로 작성된 BPF 프로그램 용 어셈블러를
+  제공 하므로, clang/LLVM 도구 체인을 이용하지 않고, 프로그램이 작고 단순한
+  경우 어셈블리에서 BPF 프로그램을 직접 작성할 수있는 대안을 제공합니다.
 
   https://github.com/solarflarecom/ebpf_asm
 
@@ -4100,9 +4090,9 @@ legacy cBPF:
 XDP Newbies
 -----------
 
-There are a couple of walk-through posts by David S. Miller to the xdp-newbies
-mailing list (http://vger.kernel.org/vger-lists.html#xdp-newbies), which explain
-various parts of XDP and BPF:
+David S. Miller가 xdp-newbies 메일 링리스트
+(http://vger.kernel.org/vger-lists.html#xdp-newbies)에 대한 XDP 및 BPF 다양한
+파트에 대해 자세히 설명한 게시물이 있습니다:
 
 4. May 2017,
      BPF Verifier Overview,
@@ -4124,22 +4114,22 @@ various parts of XDP and BPF:
      David S. Miller,
      https://www.spinics.net/lists/xdp-newbies/msg00009.html
 
-BPF Newsletter
---------------
+BPF 뉴스레터
+------------
 
-Alexander Alemayhu initiated a newsletter around BPF roughly once per week
-covering latest developments around BPF in Linux kernel land and its
-surrounding ecosystem in user space.
+Alexander Alemayhu는 주 마다 대략 한 번 BPF를 관련된 뉴스 레터를 작성하여
+Linux 커널 영역 와 사용자 영역 의 주변 에코시스템에 대한 BPF 관련 최신
+개발 내용을 다루었습니다.
 
-All BPF update newsletters (01 - 12) can be found here:
+모든 BPF 업데이트 뉴스 레터 (01 - 12)는 다음에서 찾을 수 있습니다:
 
      https://cilium.io/blog/categories/BPF%20Newsletter
 
-Podcasts
+팟케스트
 --------
 
-There have been a number of technical podcasts partially covering BPF.
-Incomplete list:
+부분적으로 BPF를 다루는 많은 팟케스트가 있었습니다.
+완전하지 않는  목록:
 
 5. Feb 2017,
      Linux Networking Update from Netdev Conference,
@@ -4176,10 +4166,10 @@ Incomplete list:
      https://ovsorbit.org/#e4
      https://ovsorbit.benpfaff.org/episode-4.mp3
 
-Blog posts
-----------
+블로그 게시물
+-------------
 
-The following (incomplete) list includes blog posts around BPF, XDP and related projects:
+다음 (완전한하지 않는)목록에는 BPF, XDP 및 관련 프로젝트 관련 블로그 게시물이 포함됩니다:
 
 34. May 2017,
      An entertaining eBPF XDP adventure,
@@ -4356,11 +4346,11 @@ The following (incomplete) list includes blog posts around BPF, XDP and related 
      Marek Majkowski,
      https://blog.cloudflare.com/bpf-the-forgotten-bytecode/
 
-Talks
------
+대담  
+----
 
-The following (incomplete) list includes talks and conference papers
-related to BPF and XDP:
+다음 (완전한 하지 않는) 목록에는 BPF 및 XDP와 관련된 대담 및
+회의 논문이 포함됩니다:
 
 44. May 2017,
      PyCon 2017, Portland,
@@ -4631,8 +4621,8 @@ related to BPF and XDP:
     Daniel Borkmann,
     http://borkmann.ch/talks/2014_devconf.pdf
 
-Further Documents
------------------
+추가 문서
+---------
 
 - Dive into BPF: a list of reading material,
   Quentin Monnet
